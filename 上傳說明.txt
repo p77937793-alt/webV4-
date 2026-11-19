@@ -1,0 +1,33 @@
+一水千田｜完整網站檔案（v4 改版＋網站後台）
+==================================================
+
+這是整個網站的完整檔案，可以直接當成一個全新的網站上傳。
+
+上傳到 GitHub（GitHub Pages）
+- 想整個換掉：把儲存庫裡原本的檔案換成這個資料夾裡的全部內容
+  （Add file → Upload files，把資料夾「裡面」的所有檔案和資料夾一次拖進去 → Commit changes）。
+- 想放到新的儲存庫：建立一個新的儲存庫，上傳全部內容後，到 Settings → Pages，
+  Source 選 Deploy from a branch、分支 main、資料夾 / (root)。
+
+上傳到其他主機
+- 把這個資料夾裡的全部內容放到網站根目錄即可（index.html 要在最上層）。
+
+在自己電腦上預覽
+- 不能直接雙擊 index.html（瀏覽器會擋住資料檔），請在這個資料夾裡執行：
+    python3 -m http.server 8000
+  然後開啟 http://localhost:8000
+
+上傳後請檢查
+- 首頁、大圳故事、互動地圖、桌遊介紹、小遊戲、桌遊試玩都能開啟。
+- 首頁的「立體看大圳」3D 模型有出現（開發環境無法測試，請實際確認）。
+- 開啟 你的網址/admin.html 可以進入後台。
+
+主要檔案
+- index.html 首頁｜story.html 大圳故事｜map.html 互動地圖｜cards.html 桌遊介紹
+- index1.html 小遊戲｜play.html 桌遊試玩｜qr.html 展場 QR Code｜admin.html 網站後台
+- data/ 網站文字資料｜images/ 圖片｜css/tokens.css 設計變數｜style.css 全站樣式
+- 後台使用說明.md｜DESIGN_SYSTEM.md 設計規範｜docs/ 內容盤點與設計預覽
+
+注意
+- _舊版備份/ 資料夾是原本就有的舊版檔案，上線後任何人都能瀏覽；不需要的話可以刪掉，不影響網站。
+- images/EX.png（約 17 MB）目前沒有任何頁面使用，刪掉可以讓網站小很多。

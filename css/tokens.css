@@ -1,0 +1,177 @@
+/* =====================================================================
+   一水千田｜設計變數（Design Tokens）v4 提案
+   ---------------------------------------------------------------------
+   ★ 這份檔案還沒有被任何頁面載入，等方向確認後才會接上。
+   說明文件：DESIGN_SYSTEM.md
+
+   材質來源：桃園台地本身
+     混凝土  圳道與水門的灰       → 全站的底色與線條
+     鑄鐵    閘門、欄杆           → 文字
+     埤塘    夜裡的池水           → 小遊戲與地圖的深色舞台
+     紅土    台地的紅壤           → 歷史：年份、時間軸
+     黃銅    閘門的銅件、稻穗     → 互動：目前位置、可以點的東西
+     圳水    流動的水             → 連結、水路
+     秧苗    灌溉後的田           → 完成、有水的狀態
+
+   三種區域（在 <section> 或 <body> 加上 data-zone）：
+     data-zone="exhibit"  產品展示（Apple）：亮、空、字大
+     data-zone="stage"    探索舞台（Rockstar）：深色滿版、高反差
+     data-zone="archive"  歷史檔案（NTCAM）：灰階網格、清楚的層級
+   ===================================================================== */
+
+:root {
+  /* ---------- 1. 原始色票（不要直接在元件裡用，請用第 2 節的語意變數） ---------- */
+  --concrete-50:  #EEEDEA;
+  --concrete-100: #E2E0DB;
+  --concrete-300: #C9C6BF;
+  --concrete-500: #8E8B85;   /* 只能當線條或裝飾，不能當文字（對比 2.9） */
+  --iron-700:     #4A4F51;
+  --iron-900:     #23282A;
+  --pond-800:     #17393A;
+  --pond-900:     #0F2627;
+  --laterite:       #A3441D;
+  --laterite-light: #D9774E;  /* 深色底上用 */
+  --brass:        #C29A45;
+  --brass-dark:   #7D5E1F;    /* 亮色底上當文字用 */
+  --canal:        #2B6F96;
+  --canal-light:  #6FB3D6;
+  --paddy:        #4F6B2A;
+  --paddy-light:  #9DBE62;
+  --white:        #FFFFFF;
+
+  /* ---------- 2. 語意變數（預設＝檔案區） ---------- */
+  --surface:      var(--concrete-50);
+  --surface-2:    var(--concrete-100);
+  --text:         var(--iron-900);
+  --text-muted:   var(--iron-700);
+  --line:         var(--concrete-300);
+  --line-strong:  var(--iron-900);
+  --accent:       var(--laterite);     /* 這一區最重要的強調色 */
+  --interactive:  var(--canal);        /* 連結、可以點的東西 */
+  --focus:        var(--brass);        /* 鍵盤焦點、目前位置 */
+  --success:      var(--paddy);
+
+  /* ---------- 3. 字體 ---------- */
+  /* 黑體：介面、產品、遊戲。宋體：歷史敘事與年份。
+     展場可能沒有網路：網路字型載不到時，會依序退回系統內建字型。 */
+  --font-sans:  "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+  --font-serif: "Noto Serif TC", "Songti TC", "PMingLiU", "MingLiU", serif;
+  --font-game:  "Huninn", var(--font-sans);   /* 小遊戲內建的粉圓體，只在 index1.html 內使用 */
+
+  /* 字級：採用古典字級表（6–72pt 系列），螢幕大時往上一級 */
+  --fs-12: .75rem;     /* 出處、圖說 */
+  --fs-14: .875rem;    /* 標籤、表格 */
+  --fs-16: 1rem;       /* 介面文字 */
+  --fs-18: 1.125rem;   /* 內文 */
+  --fs-21: 1.3125rem;  /* 導言 */
+  --fs-24: 1.5rem;     /* h3 */
+  --fs-36: clamp(1.75rem, 1.2rem + 2.2vw, 2.25rem);  /* h2 */
+  --fs-48: clamp(2.25rem, 1.4rem + 3.6vw, 3rem);     /* h1 */
+  --fs-72: clamp(3rem, 1.6rem + 6vw, 4.5rem);        /* 大數字、章節年份 */
+  --fs-display: clamp(3.5rem, 1rem + 11vw, 9rem);    /* 產品主視覺標題（一頁只用一次） */
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-bold: 700;
+  --fw-black: 900;
+
+  --lh-tight: 1.15;   /* 大標題 */
+  --lh-heading: 1.35;
+  --lh-body: 1.85;    /* 中文內文需要比英文多的行距 */
+  --lh-serif: 1.95;   /* 宋體內文再多一點 */
+
+  --ls-display: .04em;
+  --ls-body: .03em;
+
+  --measure: 36em;     /* 內文最長一行（約 34–38 個全形字） */
+  --measure-narrow: 26em;
+
+  /* ---------- 4. 版面：12 欄網格 ---------- */
+  --grid-max: 1280px;
+  --grid-cols: 12;
+  --grid-gutter: clamp(16px, 2vw, 24px);
+  --grid-margin: clamp(16px, 5vw, 80px);
+
+  /* 間距：8 的倍數；區塊之間用大間距製造呼吸感 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+  --space-8: 96px;
+  --space-9: 144px;
+  --space-section: clamp(96px, 14vw, 200px);
+
+  /* ---------- 5. 形狀 ---------- */
+  /* 圓角依層級，不是每個東西都一樣：建築結構＝直角、控制元件＝微圓、地圖標記＝圓 */
+  --radius-0: 0;
+  --radius-control: 3px;
+  --radius-media: 6px;
+  --radius-pin: 999px;
+  --rule: 1px solid var(--line);
+  --rule-strong: 2px solid var(--line-strong);
+  /* 只有浮在地圖或遊戲畫面上的面板才有陰影，而且只有一層 */
+  --elevation: 0 12px 32px rgba(15, 38, 39, .28);
+
+  /* ---------- 6. 動態 ---------- */
+  /* 不使用會回彈、超出的曲線 */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-inout: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 160ms;    /* 按下、切換 */
+  --dur-base: 320ms;    /* 面板開合、地圖聚焦 */
+  --dur-slow: 640ms;    /* 產品展示、章節轉場 */
+
+  /* ---------- 7. 其他 ---------- */
+  --nav-h: 64px;
+  --z-nav: 50;
+  --z-overlay: 80;
+  --z-toast: 90;
+}
+
+/* ===== 區域：產品展示（Apple） ===== */
+[data-zone="exhibit"] {
+  --surface: var(--white);
+  --surface-2: var(--concrete-50);
+  --text: var(--iron-900);
+  --text-muted: var(--iron-700);
+  --line: var(--concrete-100);
+  --accent: var(--iron-900);      /* 展示區不靠顏色，靠字的大小與留白 */
+  --interactive: var(--canal);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ===== 區域：探索舞台（Rockstar） ===== */
+[data-zone="stage"] {
+  --surface: var(--pond-900);
+  --surface-2: var(--pond-800);
+  --text: var(--concrete-50);
+  --text-muted: var(--concrete-300);
+  --line: rgba(238, 237, 234, .16);
+  --line-strong: var(--concrete-50);
+  --accent: var(--brass);
+  --interactive: var(--canal-light);
+  --focus: var(--brass);
+  --success: var(--paddy-light);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ===== 區域：歷史檔案（NTCAM） ===== */
+[data-zone="archive"] {
+  --surface: var(--concrete-50);
+  --surface-2: var(--concrete-100);
+  --text: var(--iron-900);
+  --text-muted: var(--iron-700);
+  --line: var(--concrete-300);
+  --accent: var(--laterite);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ===== 減少動態效果：關掉所有非必要動畫 ===== */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+}

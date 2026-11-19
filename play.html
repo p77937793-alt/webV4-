@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一水千田｜桌遊試玩</title>
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="images/drop.svg" type="image/svg+xml">
+<!-- v4：全站的設計變數與字型（DESIGN_SYSTEM.md） -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+
+<!--
+  《一水千田》桌遊試玩（卡牌示範）
+  - 卡牌內容在下方 <script id="default-data"> 裡（JSON）。
+  - 開發者模式的入口已隱藏：按 Ctrl＋Shift＋D，或在網址後面加上 #dev（例如 play.html#dev）。
+-->
+<style>
+/* ===================== 0. 設計變數（和網站同一套） ===================== */
+:root{
+  --ink:#13212b; --ink-2:#4a5660; --muted:#7d8790; --deep:#0b2233; --deep-2:#123a52;
+  --blue:#2b7bb9; --blue-2:#1d5f94; --teal:#3aa6b9; --red:#b5532d; --green:#5d8f2f; --gold:#c9962b;
+  --paper:#f4efe4; --paper-2:#ebe4d6; --line:rgba(19,33,43,.1);
+  --role:#8a5a2b; --project:#2b6cb0; --dev:#2f855a; --event:#c05621; --memory:#6b46c1;
+  --glass:rgba(255,255,255,.62); --glass-strong:rgba(255,255,255,.8); --glass-line:rgba(255,255,255,.75);
+  --blur:saturate(1.6) blur(18px);
+  --glow:0 0 0 1px rgba(255,255,255,.6) inset,0 1px 0 rgba(255,255,255,.9) inset;
+  --shadow-1:0 1px 1px rgba(19,33,43,.04),0 6px 18px -6px rgba(19,33,43,.14);
+  --shadow-2:0 2px 4px rgba(19,33,43,.05),0 24px 48px -16px rgba(19,33,43,.3);
+  --r-sm:10px; --r:16px; --r-lg:24px;
+  --ease:cubic-bezier(.22,.8,.3,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  --font:"Noto Sans TC","Microsoft JhengHei","微軟正黑體","PingFang TC",system-ui,sans-serif;
+}
+@supports (transition-timing-function:linear(0,1)){
+  :root{--spring:linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1)}
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);font-size:15px;line-height:1.6;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:-20vmax;z-index:-1;pointer-events:none;
+  background:radial-gradient(36vmax 36vmax at 10% 15%,rgba(58,166,185,.2),transparent 60%),
+             radial-gradient(32vmax 32vmax at 90% 30%,rgba(43,123,185,.16),transparent 60%),
+             radial-gradient(38vmax 38vmax at 60% 95%,rgba(181,83,45,.1),transparent 60%);
+  animation:drift 30s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(3vmax,-2vmax,0) rotate(8deg)}}
+h1,h2,h3{margin:0;line-height:1.25;letter-spacing:.02em}
+p{margin:0 0 .7em}
+.muted{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:14px}
+.glass{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-line);box-shadow:var(--glow),var(--shadow-1)}
+.panel{border-radius:var(--r-lg);padding:18px}
+.ptitle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--blue-2);margin:0 0 12px}
+.ptitle i{font-style:normal;font-size:16px}
+.ptitle .sp{flex:1}
+
+/* ===================== 1. 按鈕、輸入框 ===================== */
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:transparent}
+.btn{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:40px;padding:0 18px;border-radius:999px;font-weight:700;letter-spacing:.04em;white-space:nowrap;
+  background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line) inset,0 2px 6px -2px rgba(19,33,43,.12);
+  transition:transform .45s var(--spring),box-shadow .25s,background .25s,color .25s,opacity .25s}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 0 1px rgba(43,123,185,.35) inset,0 10px 20px -10px rgba(19,33,43,.35);color:var(--blue-2)}
+.btn:active:not(:disabled){transform:scale(.94);transition-duration:.1s}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:0 10px 22px -10px var(--blue),0 1px 0 rgba(255,255,255,.25) inset}
+.btn.primary:hover:not(:disabled){background:var(--blue-2);color:#fff;box-shadow:0 16px 30px -12px var(--blue),0 1px 0 rgba(255,255,255,.25) inset}
+.btn.primary::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-120%);transition:transform .8s var(--ease)}
+.btn.primary:hover::before{transform:translateX(120%)}
+.btn.ghost{background:transparent;box-shadow:none;color:inherit}
+.btn.ghost:hover:not(:disabled){background:rgba(43,123,185,.1);box-shadow:none}
+.btn.danger{color:#b42318}
+.btn.danger.primary{background:#c2412d;color:#fff;box-shadow:0 10px 22px -10px #c2412d}
+.btn.big{min-height:54px;padding:0 32px;font-size:17px}
+.btn.small{min-height:32px;padding:0 12px;font-size:13px}
+.btn.on{background:var(--ink);color:#fff}
+.ripple{position:absolute;z-index:-1;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);pointer-events:none;animation:ripple .7s var(--ease) forwards}
+.btn:not(.primary) .ripple{background:rgba(43,123,185,.2)}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.85);
+  transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(43,123,185,.15)}
+textarea{width:100%;resize:vertical}
+:focus-visible{outline:3px solid #ffb703;outline-offset:2px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:600;background:rgba(255,255,255,.7);box-shadow:0 0 0 1px var(--line) inset;white-space:nowrap}
+.badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em}
+.b-史料{background:#2f855a}.b-待核{background:#d97706}.b-遊戲化{background:#6b7280}
+
+/* ===================== 2. 上方列 ===================== */
+.topbar{position:sticky;top:10px;z-index:30;margin:10px auto 0;width:min(1500px,calc(100% - 20px));
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:58px;padding:8px 10px 8px 18px;border-radius:999px;
+  background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-line);box-shadow:var(--glow),var(--shadow-1)}
+.logo{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:900;letter-spacing:.12em;color:var(--blue);text-decoration:none;white-space:nowrap}
+.logo img{width:24px;transition:transform .6s var(--spring)}
+.logo:hover img{transform:rotate(-12deg) translateY(-2px)}
+.topbar .sp{flex:1}
+.rounds{display:flex;gap:4px;align-items:center}
+.rounds i{width:9px;height:9px;border-radius:999px;background:rgba(43,123,185,.2);transition:width .5s var(--spring),background .3s}
+.rounds i.past{background:var(--blue)}
+.rounds i.now{width:24px;background:linear-gradient(90deg,var(--teal),var(--blue))}
+.flow{color:var(--blue-2)}
+.flow.dry{color:var(--red)}
+.flow .drop{display:inline-block;animation:drip 2.2s ease-in-out infinite}
+@keyframes drip{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
+/* ===================== 3. 首頁 ===================== */
+.hero{position:relative;overflow:hidden;isolation:isolate;margin:10px;border-radius:32px;color:#fff;min-height:calc(100vh - 20px);
+  display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:30px;padding:clamp(40px,6vw,80px) clamp(24px,6vw,90px) 120px;
+  background:radial-gradient(120% 120% at 0% 0%,#1f6fa5 0%,var(--deep) 55%,#06141f 100%)}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.35;
+  background:url("images/ex-hero.jpg") center/cover;mix-blend-mode:luminosity;mask-image:linear-gradient(90deg,transparent,#000 70%)}
+.hero .back{position:absolute;left:24px;top:22px;color:#fff;text-decoration:none;font-size:14px;opacity:.85;display:flex;gap:6px;align-items:center;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);transition:background .2s}
+.hero .back:hover{background:rgba(255,255,255,.2);opacity:1}
+.eyebrow{display:inline-block;padding:6px 16px;border-radius:999px;font-size:13px;letter-spacing:.3em;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);margin-bottom:18px}
+.hero h1{font-size:clamp(54px,8vw,108px);font-weight:900;letter-spacing:.12em;line-height:1.05}
+.hero h1 .ch{display:inline-block;animation:char-in 1s var(--spring) both;animation-delay:calc(.1s + var(--i)*.08s)}
+@keyframes char-in{from{opacity:0;transform:translateY(.5em) scale(.9);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+.hero .lead{font-size:clamp(16px,1.6vw,20px);opacity:.9;margin:18px 0 30px;max-width:30em}
+.hero .btns{display:flex;flex-wrap:wrap;gap:12px}
+.hero .btn:not(.primary){background:rgba(255,255,255,.12);color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35) inset}
+.hero .btn:not(.primary):hover{background:rgba(255,255,255,.22);color:#fff}
+.hero .stats{display:flex;gap:28px;margin-top:40px;flex-wrap:wrap}
+.hero .stats b{display:block;font-size:34px;font-weight:900;line-height:1.1;background:linear-gradient(180deg,#fff,#bfe6f0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .stats span{font-size:13px;opacity:.75}
+.fan{position:relative;height:440px}
+.fan .card{position:absolute;left:50%;top:50%;margin:-147px 0 0 -105px;transition:transform .8s var(--spring);box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.fan .card:nth-child(1){transform:translate(-62%,4%) rotate(-14deg);animation:float 7s ease-in-out infinite}
+.fan .card:nth-child(2){transform:translate(0,-6%) rotate(0deg);z-index:2;animation:float 7s ease-in-out -2.3s infinite}
+.fan .card:nth-child(3){transform:translate(62%,4%) rotate(14deg);animation:float 7s ease-in-out -4.6s infinite}
+.fan:hover .card:nth-child(1){transform:translate(-82%,2%) rotate(-18deg)}
+.fan:hover .card:nth-child(3){transform:translate(82%,2%) rotate(18deg)}
+.fan:hover .card:nth-child(2){transform:translate(0,-10%) scale(1.04)}
+@keyframes float{50%{margin-top:-157px}}
+.wave{position:absolute;left:0;bottom:-1px;width:200%;height:90px;z-index:-1}
+.wave path{fill:var(--paper)}
+.wave .w1{opacity:.4;animation:wave 14s linear infinite}
+.wave .w2{animation:wave 9s linear infinite reverse}
+@keyframes wave{to{transform:translateX(-50%)}}
+.about{width:min(1100px,calc(100% - 40px));margin:30px auto 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.about .panel h3{font-size:17px;margin-bottom:8px;color:var(--blue-2)}
+.about .panel p{color:var(--ink-2);margin:0;font-size:14.5px}
+.about .num{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--blue);background:rgba(43,123,185,.1);padding:3px 10px;border-radius:999px;display:inline-block;margin-bottom:10px}
+
+/* ===================== 4. 開局設定 ===================== */
+.setup{width:min(980px,calc(100% - 32px));margin:24px auto 60px}
+.setup h1{font-size:clamp(30px,4vw,44px);font-weight:900;text-align:center;margin:20px 0 6px}
+.setup .sub{text-align:center;color:var(--ink-2);margin-bottom:24px}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:rgba(255,255,255,.7);box-shadow:0 0 0 1px var(--line) inset;gap:2px}
+.seg button{min-width:52px;height:40px;border-radius:999px;font-weight:800;transition:background .3s,color .3s,transform .4s var(--spring)}
+.seg button:active{transform:scale(.92)}
+.seg button.on{background:var(--blue);color:#fff;box-shadow:0 8px 16px -8px var(--blue)}
+.seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:22px 0}
+.seat{border-radius:var(--r-lg);padding:18px;animation:pop .6s var(--spring) both;animation-delay:calc(var(--i)*.06s)}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.seat .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#fff;font-size:18px;margin-bottom:12px;box-shadow:0 8px 18px -8px var(--pc)}
+.seat input,.seat select{width:100%;margin-top:6px}
+.seat .rdesc{font-size:13px;color:var(--ink-2);margin-top:10px;min-height:3.2em}
+.setup .go{display:flex;justify-content:center;gap:12px;margin-top:10px}
+.warn{color:#b42318;text-align:center}
+
+/* ===================== 5. 遊戲畫面 ===================== */
+.game{width:min(1500px,calc(100% - 20px));margin:14px auto 40px;display:grid;grid-template-columns:300px minmax(0,1fr) 320px;gap:14px;align-items:start}
+.game>*{min-width:0}
+/* 公共建設：一條水路，完成一段就有水流過 */
+.route{--fill:0;position:relative;list-style:none;margin:0;padding:0 0 0 34px}
+.route::before,.route::after{content:"";position:absolute;left:12px;top:14px;bottom:14px;width:4px;border-radius:4px}
+.route::before{background:rgba(43,123,185,.14)}
+.route::after{background:linear-gradient(180deg,var(--teal),var(--blue));transform-origin:top;transform:scaleY(var(--fill));transition:transform 1s var(--ease)}
+.node{position:relative;margin-bottom:10px;border-radius:var(--r);padding:12px 14px;transition:all .5s var(--ease)}
+.node .dot{position:absolute;left:-34px;top:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;
+  background:var(--paper);border:3px solid rgba(43,123,185,.3);color:var(--blue-2);z-index:1;transition:all .5s var(--spring)}
+.node.done .dot{background:var(--blue);border-color:#fff;color:#fff;box-shadow:0 0 0 4px rgba(43,123,185,.18),0 0 16px rgba(58,166,185,.6)}
+.node.cur{background:#fff;box-shadow:0 0 0 2px var(--project),var(--shadow-2)}
+.node.cur .dot{background:#fff;border-color:var(--project);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(43,107,176,.15)}}
+.node.locked{opacity:.55}
+.node .nname{font-weight:800;display:flex;gap:6px;align-items:center}
+.node .yr{font-size:11.5px;color:var(--muted);font-weight:600}
+.bar{height:7px;background:rgba(19,33,43,.08);border-radius:9px;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width .8s var(--spring)}
+.needs{display:grid;gap:6px;margin-top:10px}
+.need{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13.5px;padding:6px 6px 6px 10px;border-radius:12px;background:rgba(43,123,185,.06)}
+.need .ic{font-size:18px}
+.need.ok{background:rgba(47,133,90,.1);color:#2f855a}
+.goal{text-align:center;padding:16px;border-radius:var(--r);background:linear-gradient(135deg,rgba(58,166,185,.2),rgba(43,123,185,.2));font-weight:800;color:var(--blue-2)}
+
+/* 目前玩家 */
+.me{border-radius:28px;padding:22px}
+.mehead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mehead .av{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:900;color:#fff;background:var(--pc);box-shadow:0 10px 22px -10px var(--pc)}
+.mehead h2{font-size:26px;font-weight:900}
+.mehead .score{margin-left:auto;text-align:right}
+.mehead .score b{display:block;font-size:30px;font-weight:900;color:var(--red);line-height:1}
+.mehead .score small{font-size:12px;color:var(--muted)}
+.harvest{display:flex;gap:10px;align-items:flex-start;margin:16px 0 0;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(93,143,47,.12),rgba(201,150,43,.1));font-size:14px}
+.harvest .hi{font-size:22px;line-height:1}
+.mid{display:grid;grid-template-columns:1fr auto;gap:16px;margin-top:16px;align-items:stretch}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px}
+.rt{position:relative;border-radius:16px;padding:10px 6px 8px;text-align:center;background:#fff;box-shadow:0 0 0 1px var(--line) inset;transition:transform .4s var(--spring)}
+.rt:hover{transform:translateY(-3px)}
+.rt .ic{font-size:26px;line-height:1.1;display:block}
+.rt b{display:block;font-size:22px;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.rt small{font-size:11.5px;color:var(--muted)}
+.rt.zero b{color:#c3c8cc}
+.tank{min-width:150px;border-radius:16px;padding:10px 14px;background:linear-gradient(180deg,#eaf5fb,#d7ebf7);box-shadow:0 0 0 1px rgba(43,123,185,.2) inset}
+.tank .tl{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--blue-2)}
+.drops{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 2px;max-width:150px}
+.drops i{width:16px;height:16px;border-radius:50% 0 50% 50%;transform:rotate(-45deg);background:rgba(43,123,185,.18);transition:background .4s,transform .5s var(--spring)}
+.drops i.on{background:linear-gradient(135deg,var(--teal),var(--blue));transform:rotate(-45deg) scale(1.05)}
+.tank small{font-size:12px;color:var(--ink-2)}
+.lands{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.land{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.7);box-shadow:0 0 0 1px var(--line) inset;font-size:13.5px}
+.land b{font-size:16px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.act{border-radius:20px;padding:14px;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px var(--line) inset}
+.act .row{gap:6px}
+.act select,.act input{padding:6px 10px}
+.market{margin-top:16px}
+.mk{display:flex;gap:14px;overflow-x:auto;padding:6px 4px 12px;scroll-snap-type:x proximity}
+.slot{display:flex;flex-direction:column;gap:8px;align-items:center;scroll-snap-align:start}
+.slot .why{font-size:12px;color:#b42318;min-height:1.4em;text-align:center;max-width:210px}
+.slot.cant .card{filter:saturate(.5);opacity:.75}
+.endbar{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:18px}
+.endbar .muted{font-size:13px}
+
+/* 右欄 */
+.evcard{display:flex;justify-content:center}
+.players .pl{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px;border-radius:16px;transition:background .3s}
+.players .pl.active{background:#fff;box-shadow:0 0 0 2px var(--pc),var(--shadow-1)}
+.players .pl .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;background:var(--pc)}
+.players .pl small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.players .pl .sc{font-size:20px;font-weight:900;color:var(--red)}
+.players .pl .sb{grid-column:2/4;height:4px;border-radius:4px;background:rgba(19,33,43,.07);overflow:hidden}
+.players .pl .sb i{display:block;height:100%;background:var(--pc);transition:width .8s var(--spring)}
+.log{max-height:320px;overflow:auto;font-size:13px;line-height:1.6;margin:0 -6px;padding:0 6px}
+.log div{padding:6px 0;border-bottom:1px solid var(--line);animation:fadein .5s var(--ease)}
+.log div:first-child{color:var(--ink)}
+.log b.r{display:inline-block;min-width:26px;font-size:11px;color:#fff;background:var(--blue);border-radius:999px;text-align:center;margin-right:4px}
+@keyframes fadein{from{opacity:0;transform:translateY(-6px)}}
+
+/* 數字變動時跳一下 */
+.bump{animation:bump .6s var(--spring)}
+.bump.up{color:#2f855a}
+.bump.down{color:#b42318}
+@keyframes bump{30%{transform:scale(1.35)}}
+
+/* ===================== 6. 卡牌 ===================== */
+.card{--c:#999;color:var(--ink);position:relative;flex:none;width:210px;height:294px;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-align:left;
+  background:linear-gradient(170deg,#fffdf8,#f6efe1);box-shadow:0 0 0 1px rgba(19,33,43,.08) inset,0 10px 24px -12px rgba(19,33,43,.35);
+  transition:transform .5s var(--spring),box-shadow .3s}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:62px;background:var(--c);background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 70%,#000));z-index:0}
+.card::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12);z-index:0}
+.card>*{position:relative;z-index:1}
+.card .ch{color:#fff;padding:8px 12px 0;display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.12em;font-weight:700}
+.card .ch .yr{margin-left:auto;opacity:.9;letter-spacing:.02em}
+.card .cn{color:#fff;font-size:17px;font-weight:900;padding:2px 12px 0;line-height:1.25;min-height:30px;display:flex;align-items:center}
+.card .img{height:70px;margin:12px 10px 0;border-radius:10px;background:#eee center/cover no-repeat;flex:none}
+.card .cost{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:12px 10px 0;font-size:11.5px;color:var(--muted)}
+.card .cost span{background:#fff;box-shadow:0 0 0 1px var(--line) inset;border-radius:8px;padding:1px 6px;color:var(--ink);font-weight:700}
+.card .req{font-size:11.5px;color:#b42318;padding:4px 12px 0;font-weight:600}
+.card .rule{font-size:12.5px;line-height:1.55;padding:8px 12px;flex:1;overflow:hidden;white-space:pre-line;font-weight:500}
+.card .cost+.rule,.card .req+.rule{padding-top:6px}
+.card .ch+.cn+.rule{padding-top:14px}
+.card .hist{font-size:10.5px;line-height:1.45;color:#5b5348;background:rgba(201,150,43,.12);margin:0 8px 8px;padding:6px 8px;border-radius:10px;max-height:80px;overflow:hidden}
+.card .hist .src{display:block;color:var(--muted);margin-top:2px}
+.card .st{position:absolute;right:8px;bottom:8px;z-index:2}
+.card .copies{position:absolute;left:10px;bottom:6px;font-size:10.5px;color:var(--muted);font-weight:700}
+.card.big{transform:scale(1.2);transform-origin:top left;margin:0 42px 59px 0}
+.card.res .bigic{font-size:64px;text-align:center;margin-top:20px}
+.card.res .tile{text-align:center;color:var(--muted);font-size:12px}
+.card.memory .tn{display:grid;gap:6px;padding:12px 10px 8px;font-size:12px;flex:1}
+.card.memory .tn div{background:#fff;box-shadow:0 0 0 1px var(--line) inset;border-radius:10px;padding:6px 8px}
+.card.memory .tn b{color:var(--memory)}
+.hov .card:hover,.card.hov:hover{transform:translateY(-6px) rotate(-1deg);box-shadow:0 0 0 1px rgba(19,33,43,.08) inset,0 26px 40px -16px rgba(19,33,43,.45)}
+.gallery{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.gallery .card{cursor:zoom-in}
+
+/* ===================== 7. 覆蓋層、對話框 ===================== */
+.overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:rgba(6,20,31,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .3s var(--ease)}
+@keyframes fadeIn{from{opacity:0}}
+.modal{width:min(640px,100%);max-height:90vh;overflow:auto;border-radius:28px;padding:26px;background:rgba(255,253,248,.94);box-shadow:var(--shadow-2);animation:rise .5s var(--spring)}
+@keyframes rise{from{opacity:0;transform:translateY(24px) scale(.97)}}
+.modal h2,.modal h3{margin-bottom:10px}
+.modal .row{justify-content:flex-end;margin-top:16px}
+.steps{list-style:none;padding:0;margin:10px 0;counter-reset:s}
+.steps li{position:relative;padding:10px 12px 10px 48px;margin:6px 0;border-radius:14px;background:rgba(43,123,185,.06);counter-increment:s}
+.steps li::before{content:counter(s);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;display:grid;place-items:center;font-size:13px}
+/* 回合開場 */
+.splash{width:min(760px,100%);border-radius:32px;padding:30px;color:#fff;text-align:center;overflow:hidden;position:relative;isolation:isolate;
+  background:radial-gradient(120% 120% at 50% 0%,#2a86bf,var(--deep) 70%);box-shadow:0 40px 80px -30px rgba(0,0,0,.6);animation:rise .6s var(--spring)}
+.splash::after{content:"";position:absolute;left:50%;top:100%;width:150%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.15);transform:translate(-50%,-50%) scale(.2);animation:ring 6s var(--ease) infinite;z-index:-1}
+@keyframes ring{to{transform:translate(-50%,-50%) scale(1.2);opacity:0}}
+.splash .rk{font-size:13px;letter-spacing:.3em;opacity:.8}
+.splash h2{font-size:clamp(28px,4vw,40px);font-weight:900;margin:6px 0 16px}
+.splash .evwrap{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap;text-align:left;margin:10px 0 18px}
+.splash .evwrap .card{animation:flipin 1s var(--spring) .15s both;color:var(--ink)}
+@keyframes flipin{from{transform:perspective(900px) rotateY(-100deg) scale(.8);opacity:0}}
+.splash .evtxt{max-width:280px}
+.splash .evtxt b{font-size:18px}
+.splash .info{display:inline-flex;gap:8px;align-items:center;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);margin:4px}
+.splash .who{margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.15)}
+.splash .who .av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;margin:0 auto 10px;font-size:26px;font-weight:900;background:var(--pc);box-shadow:0 0 0 6px rgba(255,255,255,.12)}
+.splash .btn{margin-top:18px}
+.zoomwrap{display:flex;justify-content:center;padding:10px 0}
+.zoomwrap .card{transform:scale(1.45);margin:68px 0 70px;animation:none}
+
+/* 全螢幕（卡牌一覽、開發者模式） */
+.full{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--paper);animation:fadeIn .25s var(--ease)}
+.full .fhead{display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap;background:var(--deep);color:#fff}
+.full .fhead b{font-size:16px;margin-right:6px}
+.full .fhead .btn{background:rgba(255,255,255,.1);color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.2) inset}
+.full .fhead .btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.full .fhead .btn.on{background:#fff;color:var(--deep)}
+.full .fbody{flex:1;overflow:auto;padding:20px}
+
+/* ===================== 8. 結算 ===================== */
+.end{width:min(1100px,calc(100% - 32px));margin:24px auto 60px;text-align:center}
+.end .result{border-radius:32px;padding:clamp(30px,5vw,56px) 24px;color:#fff;position:relative;overflow:hidden;isolation:isolate;animation:rise .7s var(--spring)}
+.end .result.win{background:radial-gradient(120% 120% at 50% 0%,#3aa6b9,#1d5f94 55%,var(--deep))}
+.end .result.lose{background:radial-gradient(120% 120% at 50% 0%,#b5732d,#6b3a1f 55%,#2a1a10)}
+.end .result h1{font-size:clamp(40px,6vw,72px);font-weight:900;letter-spacing:.1em}
+.end .result p{opacity:.9;font-size:17px;margin:10px 0 0}
+.end .result .rip{position:absolute;inset:0;z-index:-1}
+.end .result .rip i{position:absolute;left:50%;top:50%;width:120%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.2);transform:translate(-50%,-50%) scale(.1);animation:ring2 5s var(--ease) infinite}
+.end .result .rip i:nth-child(2){animation-delay:1.6s}.end .result .rip i:nth-child(3){animation-delay:3.2s}
+@keyframes ring2{to{transform:translate(-50%,-50%) scale(1.3);opacity:0}}
+.rank{display:grid;gap:10px;margin:22px 0;text-align:left}
+.rank .rr{display:grid;grid-template-columns:48px 1fr repeat(3,90px) 100px;gap:10px;align-items:center;padding:14px 18px;border-radius:20px;animation:pop .6s var(--spring) both;animation-delay:calc(.2s + var(--i)*.1s)}
+.rank .rr.head{background:none;box-shadow:none;border:0;font-size:12px;color:var(--muted);font-weight:700;padding-top:0;padding-bottom:0;animation:none}
+.rank .pos{font-size:22px;font-weight:900;color:var(--blue-2)}
+.rank .tot{font-size:26px;font-weight:900;color:var(--red);text-align:right}
+.rank .c{text-align:center}
+.end h2{margin:36px 0 8px;font-size:26px}
+.end .btns{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:30px}
+
+/* ===================== 9. 開發者模式 ===================== */
+.ed{display:grid;grid-template-columns:250px 1fr 300px;gap:14px;align-items:start}
+.ed .list{max-height:calc(100vh - 120px);overflow:auto}
+.ed .list .it{padding:8px 10px;border-radius:12px;cursor:pointer;display:flex;gap:6px;align-items:center;transition:background .2s}
+.ed .list .it:hover{background:rgba(255,255,255,.9)}
+.ed .list .it.sel{background:#fff;box-shadow:0 0 0 2px var(--blue)}
+.ed .form{max-height:calc(100vh - 120px);overflow:auto}
+.ed label{display:block;font-size:13px;color:var(--muted);margin-top:10px;font-weight:600}
+.ed label input:not([type=checkbox]):not([type=color]):not([type=file]),.ed label select{width:100%;margin-top:4px}
+.ed .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ed .effrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#fff;box-shadow:0 0 0 1px var(--line) inset;border-radius:12px;padding:8px;margin-top:6px}
+.ed .effrow input{width:76px}
+.ed .effrow input.w{width:150px}
+.ed .costgrid{display:flex;gap:8px;flex-wrap:wrap}
+.ed .costgrid label{margin:0;display:flex;align-items:center;gap:4px}
+.ed .costgrid input{width:60px}
+.edpanel{max-width:820px}
+.edpanel table{width:100%;border-collapse:collapse}
+.edpanel td{padding:4px}
+.issues li{margin:6px 0}
+.tip{font-size:12px;color:var(--muted);margin-top:3px}
+.setrow{display:flex;gap:10px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.setrow>span:first-child{width:260px}
+
+.toast{position:fixed;left:50%;bottom:24px;z-index:99;transform:translateX(-50%);padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;color:#fff;
+  background:rgba(11,34,51,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 14px 30px -12px rgba(0,0,0,.5);animation:toast .5s var(--spring)}
+@keyframes toast{from{opacity:0;transform:translate(-50%,16px) scale(.9)}}
+
+/* ===================== 10. 平板、手機 ===================== */
+@media (max-width:1180px){
+  .game{grid-template-columns:1fr 1fr}
+  .game .mainc{grid-column:1/-1;order:-1}
+}
+@media (max-width:1000px){.ed{grid-template-columns:1fr}.ed .list,.ed .form{max-height:none}}
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;text-align:center;padding-top:80px}
+  .hero .btns,.hero .stats{justify-content:center}
+  .hero .lead{margin-left:auto;margin-right:auto}
+  .fan{height:340px;transform:scale(.8)}
+  .about{grid-template-columns:1fr}
+  .game{grid-template-columns:1fr}
+  .acts{grid-template-columns:1fr}
+  .mid{grid-template-columns:1fr}
+  .tank{min-width:0}.drops{max-width:none}
+  .rank .rr{grid-template-columns:36px 1fr 70px;font-size:14px}
+  .rank .rr .c{display:none}
+}
+@media (max-width:600px){
+  .topbar{border-radius:24px;padding:8px 10px}
+  .topbar .tb-r{width:100%;display:flex;gap:6px;justify-content:space-between}
+  .topbar .tb-r .btn{flex:1;padding:0 8px;font-size:13px}
+  .me{padding:16px;border-radius:24px}
+  .mehead h2{font-size:21px}
+  .res{grid-template-columns:repeat(5,1fr)}
+  .rt{padding:8px 2px}.rt .ic{font-size:22px}.rt b{font-size:18px}
+  .zoomwrap .card{transform:scale(1.15);margin:22px 0 24px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+}
+</style>
+<style id="v4-theme">
+/* =====================================================================
+   v4 外觀（DESIGN_SYSTEM.md）
+   首頁＝產品展示區（白底、大字、卡牌就是產品）；牌桌＝探索舞台區（深色底、實心面板）。
+   只換外觀：遊戲規則、卡牌內容、版面結構與所有按鈕功能都不變。
+   ===================================================================== */
+:root{
+  --ink:var(--iron-900); --ink-2:var(--iron-700); --muted:var(--iron-700); --deep:var(--pond-900); --deep-2:var(--pond-800);
+  --blue:var(--canal); --blue-2:#1F5677; --teal:var(--canal); --red:var(--laterite); --green:var(--paddy); --gold:var(--brass-dark);
+  --paper:var(--concrete-50); --paper-2:var(--concrete-100); --line:var(--concrete-300);
+  --glass:var(--white); --glass-strong:var(--white); --glass-line:var(--concrete-300); --blur:none; --glow:0 0 0 0 transparent;
+  --shadow-1:none; --shadow-2:var(--elevation);
+  --r-sm:var(--radius-control); --r:var(--radius-media); --r-lg:var(--radius-media);
+  --ease:var(--ease-out); --spring:var(--ease-out);
+  --font:var(--font-sans);
+}
+body{background:var(--white)}
+body::before{display:none}
+.glass{background:var(--white);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--concrete-300);box-shadow:none}
+.ptitle{letter-spacing:.08em;color:var(--iron-700)}
+/* 按鈕：扁平、直角微圓，沒有掃光與漣漪，按下不縮放 */
+.btn{border-radius:var(--radius-control);box-shadow:0 0 0 1px var(--concrete-300) inset}
+.btn:hover:not(:disabled){transform:none;box-shadow:0 0 0 1px var(--iron-900) inset;color:var(--iron-900)}
+.btn:active:not(:disabled){transform:none;filter:brightness(.92)}
+.btn.primary{background:var(--iron-900);color:var(--concrete-50);box-shadow:none}
+.btn.primary:hover:not(:disabled){background:var(--iron-700);color:var(--concrete-50);box-shadow:none}
+.btn.primary::before,.ripple{display:none}
+.btn.ghost:hover:not(:disabled){background:var(--concrete-100);box-shadow:none}
+.btn.danger.primary{background:var(--laterite);box-shadow:none}
+.btn.on{background:var(--iron-900)}
+input,select,textarea{border-radius:var(--radius-control);background:var(--white)}
+input:focus,select:focus,textarea:focus{border-color:var(--iron-900);box-shadow:0 0 0 3px rgba(194,154,69,.35)}
+:focus-visible{outline:2px solid var(--focus)}
+.chip{border-radius:var(--radius-control);background:var(--white)}
+.badge{border-radius:var(--radius-control)}
+/* 上方列：貼齊頂部的實心導覽 */
+.topbar{top:0;margin:0;width:100%;border-radius:0;border:0;border-bottom:1px solid var(--concrete-300);background:var(--concrete-50);
+  -webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;padding:6px var(--grid-margin)}
+.logo{color:var(--iron-900)}
+.logo:hover img{transform:none}
+.rounds i{border-radius:0;background:var(--concrete-300)}
+.rounds i.past{background:var(--canal)}
+.rounds i.now{background:var(--brass)}
+
+/* ---- 首頁：產品展示 ---- */
+.hero{margin:0;border-radius:0;color:var(--iron-900);background:var(--white);min-height:calc(100vh - 0px);padding-top:clamp(72px,9vw,120px)}
+.hero::before{display:none}
+.hero .back{color:var(--iron-900);background:transparent;border:0;border-radius:0;padding:6px 0;left:var(--grid-margin)}
+.hero .back:hover{background:transparent;text-decoration:underline}
+.eyebrow{background:transparent;border:0;border-radius:0;padding:0;letter-spacing:.3em;color:var(--iron-700)}
+.hero h1 .ch{animation:rise var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i)*60ms)}
+.hero .lead{opacity:1;color:var(--iron-700);font-weight:300;font-size:var(--fs-21)}
+.hero .btn:not(.primary){background:transparent;color:var(--iron-900);box-shadow:0 0 0 2px var(--iron-900) inset}
+.hero .btn:not(.primary):hover{background:var(--iron-900);color:var(--concrete-50)}
+.hero .stats{gap:0;border-top:2px solid var(--iron-900)}
+.hero .stats>div{padding:14px 28px 0 0;margin-right:28px}
+.hero .stats>div+div{border-left:1px solid var(--concrete-300);padding-left:28px}
+.hero .stats b{font-family:var(--font-serif);font-size:44px;background:none;-webkit-background-clip:initial;background-clip:initial;color:var(--iron-900)}
+.hero .stats span{opacity:1;color:var(--iron-700)}
+/* 示範卡牌：靜止陳列，滑過時才展開（不漂浮） */
+.fan .card{animation:none!important;box-shadow:var(--elevation);transition:transform var(--dur-base) var(--ease-out)}
+.wave{display:none}
+.about{grid-template-columns:repeat(3,1fr);gap:0;border-top:2px solid var(--iron-900);margin-top:clamp(48px,8vw,96px)}
+.about .panel{background:transparent;border:0;border-radius:0;padding:20px 24px 0 0}
+.about .panel+.panel{border-left:1px solid var(--concrete-300);padding-left:24px}
+.about .panel h3{color:var(--iron-900);font-size:var(--fs-21)}
+.about .num{background:transparent;border-radius:0;padding:0;color:var(--iron-700);letter-spacing:.1em}
+
+/* ---- 牌桌：探索舞台 ---- */
+body[data-view="game"],body[data-view="end"]{background:var(--pond-900)}
+body[data-view="game"] .topbar,body[data-view="end"] .topbar{background:var(--pond-900);color:var(--concrete-50);border-color:rgba(238,237,234,.16)}
+body[data-view="game"] .topbar .logo,body[data-view="end"] .topbar .logo{color:var(--concrete-50)}
+body[data-view="game"] .topbar .btn,body[data-view="end"] .topbar .btn{background:transparent;color:var(--concrete-50);box-shadow:0 0 0 1px rgba(238,237,234,.3) inset}
+body[data-view="game"] .topbar .btn:hover,body[data-view="end"] .topbar .btn:hover{background:var(--brass);color:var(--pond-900);box-shadow:none}
+body[data-view="game"] .topbar .flow{color:var(--canal-light)}
+body[data-view="game"] .topbar .flow.dry{color:var(--laterite-light)}
+body[data-view="game"] .topbar .muted,body[data-view="game"] .topbar span{color:var(--concrete-300)}
+body[data-view="game"] .ptitle{color:var(--iron-700)}
+.node.cur{box-shadow:0 0 0 2px var(--brass)}
+.node.cur .dot{border-color:var(--brass);animation:none}
+.node.done .dot{background:var(--canal);box-shadow:none}
+.route::after,.bar>i{background:var(--canal)}
+.goal{background:var(--concrete-100);color:var(--iron-900)}
+.me,.node,.need,.rt,.harvest,.tank{border-radius:var(--radius-media)}
+.mehead .av{box-shadow:none}
+.harvest{background:var(--concrete-100)}
+.rt:hover{transform:none}
+.tank{background:var(--concrete-100);box-shadow:0 0 0 1px var(--concrete-300) inset}
+.drops i.on{background:var(--canal)}
+/* 對話框與事件畫面 */
+.overlay{background:rgba(15,38,39,.72);-webkit-backdrop-filter:none;backdrop-filter:none}
+.modal{background:var(--concrete-50);border-top:6px solid var(--brass);box-shadow:var(--elevation);animation:rise var(--dur-base) var(--ease-out)}
+.splash{background:var(--pond-800);border-top:6px solid var(--brass);border-radius:var(--radius-media);box-shadow:var(--elevation);animation:rise var(--dur-base) var(--ease-out)}
+.splash::after{display:none}
+.splash .info{background:transparent;border:1px solid rgba(238,237,234,.3);border-radius:var(--radius-control)}
+.splash .btn.primary{background:var(--brass);color:var(--pond-900)}
+.end .result.win{background:var(--pond-800);border-top:6px solid var(--paddy-light)}
+.end .result.lose{background:var(--pond-800);border-top:6px solid var(--laterite-light)}
+@media (max-width:860px){.about{grid-template-columns:1fr}.about .panel+.panel{border-left:0;border-top:1px solid var(--concrete-300);padding-left:0;margin-top:16px}}
+@media (max-width:600px){.hero .stats>div{margin-right:16px;padding-right:16px}.hero .stats>div+div{padding-left:16px}.hero .stats b{font-size:32px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- 內建卡牌內容：開發者模式「下載含目前內容的 HTML」會改寫這一段 -->
+<script id="default-data" type="application/json">
+{
+ "meta":{"title":"一水千田","version":"卡牌內容 v1","stamp":"2026-11-05T00:00:00Z"},
+ "settings":{
+  "maxRounds":8,"startDraw":3,"drawPerTurn":2,"bankRatio":4,"marketSize":3,
+  "startDry":2,"startWet":0,"startPond":0,"baseWater":2,"waterCapBase":2,"waterPerPond":2,
+  "dryChance":0.5,"vpPerContrib":1,"vpPerWet":1,"failMode":"allLose","hideDevButton":false
+ },
+ "resources":[
+  {"id":"wood","name":"木材","icon":"🪵","tile":"山林","color":"#6b4f2a","copies":15,"status":"遊戲化","history":"工程搭建支撐、模板與聚落建屋所需的材料。","source":"遊戲化設計（企劃書：地貌與資源對應屬遊戲化，待依史料調整）"},
+  {"id":"brick","name":"紅磚","icon":"🧱","tile":"紅土","color":"#b5532d","copies":15,"status":"遊戲化","history":"桃園台地表層為透水性低的紅土，先民利用地勢鑿池築堤蓄存雨水。","source":"企劃書 肆、一、1"},
+  {"id":"stone","name":"石材","icon":"🪨","tile":"砂礫","color":"#6b7280","copies":15,"status":"遊戲化","history":"隧道襯砌、水橋與渠道結構所需的材料。","source":"遊戲化設計"},
+  {"id":"labor","name":"勞力","icon":"💪","tile":"施工聚落","color":"#9a6b16","copies":15,"status":"史料","history":"參與施工者包括技師、礦工與在地客家茶農等不同身分的勞動者。","source":"企劃書 肆、一、5（個人身分待依名錄查核）"},
+  {"id":"rice","name":"稻米","icon":"🌾","tile":"旱田／水田","color":"#5d8f2f","copies":15,"status":"史料","history":"灌溉改善後，更多農田具備一年兩期稻作的條件。","source":"農田水利署資料（企劃書 肆、一、4）"}
+ ],
+ "cards":[
+  {"id":"R1","type":"role","name":"農民","copies":1,"year":"","status":"史料",
+   "effects":[{"t":"stat","target":"self","stat":"旱田","n":1},{"t":"gain","target":"self","res":"rice","n":2}],
+   "text":"開局多 1 塊旱田、2 稻米。","history":"早期農民利用地勢鑿池築堤蓄存雨水；豪雨時溢流、久旱時乾涸，收成不穩定。","source":"企劃書 肆、一、1","image":""},
+  {"id":"R2","type":"role","name":"水利技師","copies":1,"year":"1916–1924","status":"史料",
+   "effects":[{"t":"stat","target":"self","stat":"contribBonus","n":1}],
+   "text":"投入公共建設時，每 1 份資源多得 1 貢獻分。","history":"張令紀等技師參與工程；工程推進仰賴測量、進度管理與現地施工技術。","source":"企劃書 肆、一、2（個人事蹟待核）","image":""},
+  {"id":"R3","type":"role","name":"工程勞動者","copies":1,"year":"1916–1924","status":"待核",
+   "effects":[{"t":"income","res":"labor","n":1}],
+   "text":"每回合開始額外獲得 1 勞力。","history":"參與施工者包括礦工與在地客家茶農；殉職名錄中可見溫細妹、范氏美妹等女性姓名。","source":"企劃書 肆、一、5（身分應配合名錄逐項查核）","image":""},
+  {"id":"R4","type":"role","name":"地方商人","copies":1,"year":"","status":"遊戲化",
+   "effects":[{"t":"tradeRatio","n":3}],
+   "text":"與銀行交易改為 3 換 1。","history":"灌溉改善為農民生計與地方經濟提供支持，帶動附近市鎮逐漸繁榮。","source":"企劃書前版 肆、一、4；角色為遊戲化設計","image":""},
+  {"id":"R5","type":"role","name":"水利管理人員","copies":1,"year":"","status":"史料",
+   "effects":[{"t":"stat","target":"self","stat":"輪灌","n":1}],
+   "text":"乾旱時，你的水滴不會全部失去。","history":"供水不足時，水利管理人員依水源、埤塘存水及農田需求安排配水量、時間與輪流灌溉。","source":"企劃書 肆、一、3","image":""},
+
+  {"id":"P1","type":"project","name":"石門取水口","copies":1,"year":"1916 開工","status":"史料",
+   "cost":{"stone":2,"labor":2,"wood":1},"effects":[],"unlockWater":false,
+   "text":"公共水源的起點。完成後才能開始開鑿導水隧道。","history":"自大漢溪上游石門地區取水，利用台地向西北傾斜的地勢，以重力自流把水送上台地。","source":"農田水利署桃園管理處〈桃園大圳建設〉；企劃書 肆、一、2","image":""},
+  {"id":"P2","type":"project","name":"導水隧道","copies":1,"year":"1916–1924","status":"史料",
+   "cost":{"stone":3,"labor":3,"wood":2},"effects":[],"unlockWater":false,
+   "text":"最困難的工程。需要大量石材與勞力。","history":"導水路約 20.47 公里，其中 8 段隧道合計約 15.62 公里；施工面臨地層鬆軟、地下水滲出。","source":"農田水利署完工統計（企劃書 肆、一、2）","image":""},
+  {"id":"P3","type":"project","name":"水橋與明渠","copies":1,"year":"1916–1924","status":"史料",
+   "cost":{"brick":2,"stone":2,"labor":1},"effects":[],"unlockWater":false,
+   "text":"跨越溪谷，讓水路連通到八德大湳。","history":"以水橋與明渠跨越溪谷，維持輸水路線連通，將水導向八德大湳，再分送台地各灌溉區。","source":"企劃書 肆、一、2、3","image":""},
+  {"id":"P4","type":"project","name":"幹線與支分線（通水）","copies":1,"year":"1924.5.26","status":"史料",
+   "cost":{"brick":3,"labor":2,"wood":1},"effects":[{"t":"note","text":"桃園大圳通水！"}],"unlockWater":true,
+   "text":"完成後通水：之後每回合開始，每位玩家獲得水滴，水田可以收成。","history":"1924 年 5 月 26 日導水路及主要幹支分線通水；水由幹線、支線與分線送往各灌溉區。","source":"企劃書 肆、一、2","image":""},
+  {"id":"P5","type":"project","name":"埤塘聯合調蓄","copies":1,"year":"1919–1928","status":"史料",
+   "cost":{"brick":2,"labor":2,"stone":1,"rice":1},"effects":[{"t":"stat","target":"all","stat":"埤塘","n":1}],"unlockWater":false,
+   "text":"完成後每位玩家獲得 1 座埤塘（可多存 2 水滴）。","history":"1919 年成立的桃園大圳組合負責貯水池與給水路，1928 年完成整體系統；完工時線內貯水池 231 口。","source":"農田水利署史料（企劃書 肆、一、2、3）","image":""},
+
+  {"id":"D1","type":"dev","name":"田埂整修・旱田變水田","copies":4,"year":"","status":"遊戲化",
+   "cost":{"labor":1,"brick":1},"requires":[{"k":"stat","stat":"旱田","min":1}],
+   "effects":[{"t":"stat","target":"self","stat":"旱田","n":-1},{"t":"stat","target":"self","stat":"水田","n":1}],
+   "text":"","history":"有了穩定水源，原本依賴降雨的看天田，才有機會改為水田。","source":"企劃書 肆、一、4","image":""},
+  {"id":"D2","type":"dev","name":"整修埤塘","copies":3,"year":"","status":"史料",
+   "cost":{"brick":1,"labor":2,"stone":1},"requires":[],
+   "effects":[{"t":"stat","target":"self","stat":"埤塘","n":1},{"t":"stat","target":"self","stat":"vp","n":1}],
+   "text":"","history":"埤塘具蓄水與調節功能：雨量充足時儲存，需要時再供灌溉。","source":"企劃書 肆、一、3","image":""},
+  {"id":"D3","type":"dev","name":"延伸給水路・開墾水田","copies":3,"year":"","status":"遊戲化",
+   "cost":{"stone":1,"labor":1,"wood":1},"requires":[{"k":"water"}],
+   "effects":[{"t":"stat","target":"self","stat":"水田","n":1}],
+   "text":"","history":"水由幹線輸送，再經支線與分線分配至各灌溉區，並透過給水路送往農田。","source":"企劃書 肆、一、3","image":""},
+  {"id":"D4","type":"dev","name":"雙期稻作","copies":2,"year":"","status":"史料",
+   "cost":{"rice":1,"labor":1},"requires":[{"k":"water"},{"k":"stat","stat":"水田","min":1}],
+   "effects":[{"t":"stat","target":"self","stat":"riceBonus","n":1},{"t":"stat","target":"self","stat":"vp","n":1}],
+   "text":"","history":"大圳供應二萬二千餘公頃耕地，使原本缺水的土地成為適合兩期稻作的水田。","source":"農田水利署資料（企劃書 肆、一、4）","image":""},
+  {"id":"D5","type":"dev","name":"農村聚落","copies":4,"year":"","status":"史料",
+   "cost":{"wood":2,"brick":1,"rice":1},"requires":[],
+   "effects":[{"t":"stat","target":"self","stat":"聚落","n":1},{"t":"stat","target":"self","stat":"vp","n":2}],
+   "text":"","history":"灌溉環境改善，為農業聚落的持續發展提供支持；水圳與埤塘逐漸成為地方生活的一部分。","source":"企劃書 肆、一、4","image":""},
+  {"id":"D6","type":"dev","name":"農產品交易","copies":3,"year":"","status":"遊戲化",
+   "cost":{"rice":2},"requires":[],
+   "effects":[{"t":"draw","target":"self","n":2},{"t":"stat","target":"self","stat":"vp","n":1}],
+   "text":"","history":"穩定的收成為農民家庭生計與農村經濟提供支持。","source":"企劃書 肆、一、4","image":""},
+  {"id":"D7","type":"dev","name":"巡水與輪灌","copies":2,"year":"","status":"史料",
+   "cost":{"labor":1,"rice":1},"requires":[],
+   "effects":[{"t":"stat","target":"self","stat":"輪灌","n":1}],
+   "text":"","history":"缺水時透過輪流灌溉安排供水時間與順序，讓有限水源分配至農田。","source":"企劃書 肆、一、3","image":""},
+
+  {"id":"E1","type":"event","name":"久旱","copies":3,"year":"","status":"史料",
+   "effects":[{"t":"noWater"},{"t":"waterLoseAll","target":"all","unless":"埤塘,輪灌"}],
+   "text":"","history":"降雨季節分布不均，久旱時埤塘可能乾涸，難以在各地之間調配水量。","source":"企劃書 肆、一、1（事件為遊戲化）","image":""},
+  {"id":"E2","type":"event","name":"豪雨溢流","copies":2,"year":"","status":"史料",
+   "effects":[{"t":"water","target":"all","n":2}],
+   "text":"","history":"早期埤塘彼此缺乏連通水路，豪雨時容易溢流——存不下的水就流走了。","source":"企劃書 肆、一、1","image":""},
+  {"id":"E3","type":"event","name":"地層鬆軟・地下水滲出","copies":2,"year":"1916–1924","status":"史料",
+   "effects":[{"t":"projectCost","res":"labor","n":1},{"t":"projectCost","res":"stone","n":1}],
+   "text":"","history":"施工過程面臨地層鬆軟、地下水滲出及隧道掘鑿等困難。","source":"企劃書 肆、一、2","image":""},
+  {"id":"E4","type":"event","name":"總督府推動增產","copies":1,"year":"1916","status":"史料",
+   "effects":[{"t":"contribMult","n":2}],
+   "text":"","history":"1916 年，臺灣總督府為增加糧食生產，正式推動官設埤圳工程。","source":"企劃書 肆、一、2","image":""},
+  {"id":"E5","type":"event","name":"桃園大圳組合成立","copies":1,"year":"1919","status":"史料",
+   "effects":[{"t":"gain","target":"all","res":"brick","n":1},{"t":"gain","target":"all","res":"labor","n":1}],
+   "text":"","history":"1919 年成立公共埤圳桃園大圳組合，負責貯水池、給水路等工程。","source":"企劃書 肆、一、2","image":""},
+  {"id":"E6","type":"event","name":"豐收","copies":2,"year":"","status":"遊戲化",
+   "effects":[{"t":"fieldBonus","n":1}],
+   "text":"","history":"穩定的灌溉減少缺水造成的農作損失。","source":"企劃書 肆、一、4","image":""},
+  {"id":"E7","type":"event","name":"颱風後巡視隧道","copies":1,"year":"","status":"待核",
+   "effects":[{"t":"waterMod","n":-1}],
+   "text":"","history":"颱風豪雨後需巡視隧道，確認供水安全。（今日工作站的經驗，非日治時期史料）","source":"水尾工作站站長李宏志訪談（原文待補）","image":""},
+  {"id":"E8","type":"event","name":"平穩的一季","copies":2,"year":"","status":"遊戲化",
+   "effects":[],"text":"本回合沒有特別事件。","history":"","source":"","image":""},
+
+  {"id":"M1","type":"memory","name":"辨天池（1-1 號池）","copies":1,"status":"史料",
+   "then":"1928 年：桃園區大型埤塘與遊憩名勝","now":"因機場開發與遷村安置填平，今陽明運動公園、建國國中周邊",
+   "history":"","source":"企劃書 肆、三","image":""},
+  {"id":"M2","type":"memory","name":"第一支十一號池（公埤）","copies":1,"status":"待核",
+   "then":"黃文城童年玩水的「公埤」","now":"訪談說今為公園；廢除清單寫「供學校」——兩者矛盾，待核",
+   "history":"","source":"黃文城訪談；〈灌區埤塘發展史〉廢除清單","image":""},
+  {"id":"M3","type":"memory","name":"5-7、6-5 號池","copies":1,"status":"史料",
+   "then":"第五、第六支線的貯水池","now":"廢除，供高鐵青埔站使用",
+   "history":"","source":"〈桃園管理處灌區埤塘發展史〉（資料年份待核）","image":""},
+  {"id":"M4","type":"memory","name":"第二支線多口貯水池","copies":1,"status":"史料",
+   "then":"2-27、2-28、2-29 等號池","now":"廢除，供「中正國際機場」（今桃園國際機場）使用；清單沿用舊名",
+   "history":"","source":"〈桃園管理處灌區埤塘發展史〉（資料年份待核）","image":""},
+  {"id":"M5","type":"memory","name":"1-5、1-6 號池","copies":1,"status":"史料",
+   "then":"第一支線的貯水池","now":"廢除，供桃園縣政府、桃園地方法院及桃園管理處使用",
+   "history":"","source":"〈桃園管理處灌區埤塘發展史〉（資料年份待核）","image":""}
+ ]
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   《一水千田》桌遊試玩
+   1. 基本設定　2. 資料載入／儲存　3. 小工具　4. 卡牌外觀
+   5. 畫面：首頁、開局、遊戲、結算、卡牌一覽、規則
+   6. 遊戲邏輯　7. 開發者模式（入口隱藏：Ctrl＋Shift＋D 或網址加 #dev）
+   8. 互動事件　9. 啟動
+   ===================================================================== */
+
+/* ================= 1. 基本設定 ================= */
+const LS_KEY = 'yishui-cards-v1';
+const TYPES = {
+  role:{label:'人物角色卡',short:'角色',hex:'#8a5a2b'},
+  project:{label:'公共建設卡',short:'公共建設',hex:'#2b6cb0'},
+  dev:{label:'個人發展卡',short:'個人發展',hex:'#2f855a'},
+  event:{label:'歷史事件卡',short:'歷史事件',hex:'#c05621'},
+  memory:{label:'今昔對照卡',short:'今昔對照',hex:'#6b46c1'}
+};
+const STATUSES = ['史料','待核','遊戲化'];
+const STAT_LABEL = {vp:'分數',riceBonus:'每塊水田收成',contribBonus:'投入公共建設每份貢獻分',extraDraw:'每回合多抽資源卡'};
+const TARGETS = {self:'自己',all:'每位玩家',others:'其他玩家'};
+const EFFECTS = {
+  gain:{label:'獲得資源',p:['target','res','n']},
+  lose:{label:'失去資源',p:['target','res','n','unless']},
+  stat:{label:'增減數值（田、埤塘、分數…）',p:['target','stat','n']},
+  draw:{label:'抽資源卡',p:['target','n']},
+  income:{label:'每回合固定收入（持續）',p:['res','n']},
+  water:{label:'獲得水滴',p:['target','n']},
+  waterLoseAll:{label:'失去所有水滴',p:['target','unless']},
+  noWater:{label:'本回合不配水',p:[]},
+  waterMod:{label:'本回合配水增減',p:['n']},
+  projectCost:{label:'目前公共建設需求增加',p:['res','n']},
+  contribMult:{label:'本回合貢獻分倍數',p:['n']},
+  fieldBonus:{label:'本回合每塊水田多收稻米',p:['n']},
+  tradeRatio:{label:'銀行交易比例（持續）',p:['n']},
+  note:{label:'只顯示文字（手動處理）',p:['text']}
+};
+const PCOLORS = ['#2b7bb9','#c05621','#2f855a','#6b46c1'];   // 玩家代表色
+const LANDS = [['旱田','🏜','看天田'],['水田','🌾','水田'],['埤塘','💧','埤塘'],['聚落','🏘','聚落'],['輪灌','🔄','輪灌']];
+
+/* ================= 2. 資料載入／儲存 ================= */
+const EMBED = JSON.parse(document.getElementById('default-data').textContent);
+let DATA;
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function lsGet(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null')}catch(e){return null}}
+function lsSet(v){try{localStorage.setItem(LS_KEY,JSON.stringify(v));return true}catch(e){toast('⚠ 無法自動儲存（瀏覽器不允許或容量已滿），請記得匯出 JSON');return false}}
+let saveTimer=null;
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{lsSet({base:EMBED.meta.stamp,saved:new Date().toISOString(),data:DATA})},300)}
+function loadData(){
+  const s=lsGet();
+  if(s&&s.data&&s.base===EMBED.meta.stamp){DATA=s.data;return null}
+  DATA=clone(EMBED);
+  if(s&&s.data) return s;   // 內建內容換了版本，但瀏覽器裡有舊草稿
+  return null;
+}
+function normalize(){
+  DATA.meta=DATA.meta||{};
+  DATA.settings=Object.assign({},EMBED.settings,DATA.settings||{});
+  DATA.resources=DATA.resources||[];DATA.cards=DATA.cards||[];
+  DATA.cards.forEach(c=>{c.effects=c.effects||[];c.cost=c.cost||{};c.requires=c.requires||[];c.copies=c.copies==null?1:c.copies;c.status=c.status||'遊戲化'});
+}
+
+/* ================= 3. 小工具 ================= */
+const $=s=>document.querySelector(s);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function S(){return DATA.settings}
+function resById(id){return DATA.resources.find(r=>r.id===id)}
+function resName(id){if(id==='water')return '水滴';const r=resById(id);return r?r.name:'（未知資源 '+id+'）'}
+function resIcon(id){if(id==='water')return '💧';const r=resById(id);return r?r.icon:'❓'}
+function cardById(id){return DATA.cards.find(c=>c.id===id)}
+function cardsOf(t){return DATA.cards.filter(c=>c.type===t)}
+function statName(s){return STAT_LABEL[s]||s}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function toast(m){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function download(name,text,type){const b=new Blob([text],{type:type||'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function newId(prefix){let i=1;while(DATA.cards.some(c=>c.id===prefix+i))i++;return prefix+i}
+function initial(name){const a=Array.from(String(name||'?').trim());return esc(a[a.length-1]||'?')}   // 頭像用名字的最後一個字（玩家一→一）
+function pcolor(i){return PCOLORS[i%PCOLORS.length]}
+function totalCopies(list){return list.reduce((s,c)=>s+(+c.copies||0),0)}
+
+/* ================= 文字產生 ================= */
+function effText(e){
+  const tg=TARGETS[e.target]||'自己', n=Number(e.n)||0;
+  const un=e.unless?`（持有${String(e.unless).split(',').map(s=>statName(s.trim())).join('或')}者不受影響）`:'';
+  switch(e.t){
+    case 'gain':return `${tg}獲得 ${n} ${resIcon(e.res)}${resName(e.res)}`;
+    case 'lose':return `${tg}失去 ${n} ${resIcon(e.res)}${resName(e.res)}${un}`;
+    case 'stat':return `${tg}${statName(e.stat)} ${n>=0?'+':''}${n}`;
+    case 'draw':return `${tg}抽 ${n} 張資源卡`;
+    case 'income':return `每回合開始獲得 ${n} ${resIcon(e.res)}${resName(e.res)}`;
+    case 'water':return `${tg}獲得 ${n} 💧水滴`;
+    case 'waterLoseAll':return `${tg}失去所有💧水滴${un}`;
+    case 'noWater':return '本回合不配水';
+    case 'waterMod':return `本回合配水 ${n>=0?'+':''}${n}`;
+    case 'projectCost':return `目前公共建設需求 +${n} ${resIcon(e.res)}${resName(e.res)}`;
+    case 'contribMult':return `本回合投入公共建設，貢獻分 ×${n}`;
+    case 'fieldBonus':return `本回合每塊水田多收 ${n} 🌾`;
+    case 'tradeRatio':return `與銀行交易改為 ${n} 換 1`;
+    case 'note':return e.text||'';
+  }
+  return '';
+}
+function reqText(r){return r.k==='water'?'已通水':`${statName(r.stat)} ≥ ${r.min}`}
+function ruleText(c){
+  if(c.text&&c.text.trim())return c.text;
+  return (c.effects||[]).map(effText).filter(Boolean).join('\n');
+}
+function costHTML(cost){
+  return Object.entries(cost||{}).filter(([k,v])=>v>0).map(([k,v])=>`<span>${resIcon(k)}×${v}</span>`).join('');
+}
+
+/* ================= 4. 卡牌外觀 ================= */
+function cardHTML(c,opt){
+  opt=opt||{};
+  const ty=TYPES[c.type]||{label:c.type,hex:'#999'};
+  const cls='card '+c.type+(opt.big?' big':'');
+  const zoom=opt.zoom?` data-act="zoom" data-id="${esc(c.id)}" tabindex="0" role="button" aria-label="放大看 ${esc(c.name)}"`:'';
+  const st=`<span class="badge b-${esc(c.status)} st">${esc(c.status)}</span>`;
+  const cp=opt.copies&&c.copies>1?`<span class="copies">×${c.copies} 張</span>`:'';
+  const img=c.image?`<div class="img" style="background-image:url('${esc(c.image)}')"></div>`:'';
+  if(c.type==='memory'){
+    return `<div class="${cls}" style="--c:${ty.hex}"${zoom}>
+      <div class="ch"><span class="ty">${ty.label}</span></div>
+      <div class="cn">${esc(c.name)}</div>${img}
+      <div class="tn"><div><b>昔</b>　${esc(c.then)}</div><div><b>今</b>　${esc(c.now)}</div></div>
+      ${c.source?`<div class="hist"><span class="src">出處：${esc(c.source)}</span></div>`:''}${st}${cp}</div>`;
+  }
+  const cost=costHTML(c.cost);
+  const req=(c.requires||[]).length?`<div class="req">需要：${c.requires.map(reqText).join('、')}</div>`:'';
+  const water=c.unlockWater?'\n💧 完成即通水':'';
+  return `<div class="${cls}" style="--c:${ty.hex}"${zoom}>
+    <div class="ch"><span class="ty">${ty.label}</span>${c.year?`<span class="yr">${esc(c.year)}</span>`:''}</div>
+    <div class="cn">${esc(c.name)}</div>${img}
+    ${cost?`<div class="cost">${c.type==='project'?'需求':'花費'} ${cost}</div>`:''}
+    ${req}
+    <div class="rule">${esc(ruleText(c)+water)}</div>
+    ${c.history||c.source?`<div class="hist">${esc(c.history)}${c.source?`<span class="src">出處：${esc(c.source)}</span>`:''}</div>`:''}
+    ${st}${cp}</div>`;
+}
+function resCardHTML(r,opt){
+  opt=opt||{};
+  return `<div class="card res" style="--c:${esc(r.color)}">
+    <div class="ch"><span class="ty">資源卡</span></div>
+    <div class="cn">${esc(r.name)}</div>
+    <div class="bigic">${esc(r.icon)}</div>
+    <div class="tile">產自：${esc(r.tile)}</div>
+    <div class="rule"></div>
+    ${r.history||r.source?`<div class="hist">${esc(r.history)}${r.source?`<span class="src">出處：${esc(r.source)}</span>`:''}</div>`:''}
+    <span class="badge b-${esc(r.status)} st">${esc(r.status)}</span>
+    ${opt.copies?`<span class="copies">×${r.copies} 張</span>`:''}</div>`;
+}
+
+/* ================= 5. 畫面 ================= */
+let VIEW='home';      // home | setup | game | end
+let OVER=null;        // null | gallery | editor | rules
+let G=null;           // 遊戲狀態
+let ED={tab:'role',sel:null};
+let GAL={tab:'all',zoom:null};
+let MODAL=null;       // {html}
+let UI={from:null,to:null,gRes:null,gTo:null,gN:1};   // 交易選單記住上次選的
+let LASTV={};         // 上一次畫面上的數字（用來做「跳一下」）
+
+function render(){
+  let h='';
+  if(VIEW==='home')h=homeHTML();
+  else if(VIEW==='setup')h=setupHTML();
+  else if(VIEW==='game')h=gameHTML();
+  else if(VIEW==='end')h=endHTML();
+  if(OVER==='gallery')h+=galleryHTML();
+  if(OVER==='editor')h+=editorHTML();
+  if(OVER==='rules')h+=rulesHTML();
+  if(VIEW==='game'&&G&&G.splash&&!OVER&&!MODAL)h+=splashHTML();
+  if(MODAL)h+=`<div class="overlay"><div class="modal" role="dialog" aria-modal="true">${MODAL.html}</div></div>`;
+  const keepScroll=OVER==='editor'?[...document.querySelectorAll('.ed .form,.ed .list,.full .fbody')].map(e=>e.scrollTop):null;
+  document.body.dataset.view=VIEW;   // v4：讓牌桌畫面使用深色舞台底色
+  $('#app').innerHTML=h;
+  if(keepScroll)[...document.querySelectorAll('.ed .form,.ed .list,.full .fbody')].forEach((e,i)=>{if(keepScroll[i]!=null)e.scrollTop=keepScroll[i]});
+  bumpNumbers();
+  document.body.style.overflow=(OVER||MODAL||(G&&G.splash&&VIEW==='game'))?'hidden':'';
+}
+// 數字有變動時，讓它跳一下（綠色＝增加、紅色＝減少）
+function bumpNumbers(){
+  const now={};
+  document.querySelectorAll('[data-v]').forEach(el=>{
+    const k=el.dataset.v,v=parseFloat(el.textContent);now[k]=v;
+    if(k in LASTV&&!isNaN(v)&&v!==LASTV[k]){el.classList.add('bump',v>LASTV[k]?'up':'down');setTimeout(()=>el.classList.remove('bump','up','down'),700)}
+  });
+  LASTV=now;
+}
+function topbarHTML(extra){
+  return `<header class="topbar">
+    <a class="logo" href="index.html" data-act="goSite"><img src="images/drop.svg" alt="">一水千田</a>
+    ${extra||''}<span class="sp"></span>
+    <div class="row tb-r">${VIEW==='game'?`<button class="btn small ghost" data-act="openRules">📖 規則</button><button class="btn small ghost" data-act="openGallery">🃏 卡牌</button><button class="btn small" data-act="askQuit">結束這局</button>`:''}
+    <button class="btn small ghost" data-act="goSite">🏠 網站首頁</button></div></header>`;
+}
+
+/* ---------- 首頁 ---------- */
+function homeHTML(){
+  const pick=['project','role','event'].map(t=>cardsOf(t)[0]).filter(Boolean);
+  const title=Array.from('一水千田').map((ch,i)=>`<span class="ch" style="--i:${i}">${ch}</span>`).join('');
+  return `<section class="hero">
+    <a class="back" href="index.html" data-act="goSite">← 回網站首頁</a>
+    <div>
+      <span class="eyebrow">桌遊試玩・卡牌示範</span>
+      <h1 aria-label="一水千田">${title}</h1>
+      <p class="lead">半合作策略桌遊：大家一起蓋好石門取水口、導水隧道和水圳，讓水流進千塘；同時經營自己的田，看誰最會用水。</p>
+      <div class="btns">
+        <button class="btn big primary" data-act="goSetup">▶ 開始試玩</button>
+        <button class="btn big" data-act="openGallery">🃏 卡牌一覽</button>
+        <button class="btn big" data-act="openRules">📖 怎麼玩</button>
+      </div>
+      <div class="stats">
+        <div><b>${projects().length}</b><span>項公共建設</span></div>
+        <div><b>${DATA.cards.length}</b><span>種卡牌</span></div>
+        <div><b>${totalCopies(DATA.cards)+totalCopies(DATA.resources)}</b><span>張牌</span></div>
+        <div><b>${+S().maxRounds||8}</b><span>回合</span></div>
+      </div>
+    </div>
+    <div class="fan" aria-hidden="true">${pick.map(c=>cardHTML(c)).join('')}</div>
+    <svg class="wave" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true">
+      <path class="w1" d="M0,45 C240,85 480,5 720,45 C960,85 1200,5 1440,45 L1440,90 L0,90 Z"/>
+      <path class="w2" d="M0,60 C240,25 480,95 720,60 C960,25 1200,95 1440,60 L1440,90 L0,90 Z"/>
+    </svg>
+  </section>
+  <section class="about">
+    <div class="panel glass"><span class="num">01</span><h3>合作蓋大圳</h3><p>依序完成 ${projects().map(c=>esc(c.name)).join('、')}。全部完成才算贏。</p></div>
+    <div class="panel glass"><span class="num">02</span><h3>通水之後</h3><p>水會流進你的埤塘。水田要用水才能收成，看天田只能看天吃飯。</p></div>
+    <div class="panel glass"><span class="num">03</span><h3>史料改編</h3><p>每張卡都標了「史料／待核／遊戲化」，背面的小故事附上出處。內容版本：${esc(DATA.meta.version||'')}</p></div>
+  </section>`;
+}
+function rulesHTML(){
+  const s=S();
+  return `<div class="overlay" data-act="closeOver"><div class="modal" data-stop role="dialog" aria-modal="true" aria-label="規則說明">
+  <h2>📖 怎麼玩</h2>
+  <p><b>目標（半合作）：</b>${s.maxRounds} 回合內，全體一起完成全部 ${projects().length} 張公共建設卡。達成後，分數最高的玩家獲勝；${s.failMode==='allLose'?'沒有達成則<b>全體失敗</b>':'沒有達成則<b>全體分數減半</b>'}。</p>
+  <p><b>每回合開始：</b>翻開 1 張歷史事件卡，所有人立即套用。若已通水，每人獲得 ${s.baseWater} 💧（上限＝${s.waterCapBase}＋每座埤塘 ${s.waterPerPond}，超過的水會流走）。</p>
+  <ol class="steps">
+   <li><b>收成</b>：抽 ${s.drawPerTurn} 張資源卡。每塊<b>水田</b>用掉 1 💧 收成 🌾（雙期稻作會更多）；每塊<b>旱田</b>（看天田）有 ${Math.round(s.dryChance*100)}% 機會收成 1 🌾。</li>
+   <li><b>行動</b>（不限次數、順序）：投入資源到目前的公共建設（每份得 ${s.vpPerContrib} 貢獻分）、向銀行 ${s.bankRatio} 換 1、把資源給其他玩家（代表協商交易）、購買市場上的個人發展卡。</li>
+   <li>按「結束回合」，換下一位。</li>
+  </ol>
+  <p><b>計分：</b>貢獻分＋卡牌分數＋每塊水田 ${s.vpPerWet} 分。</p>
+  <p class="muted">開局：每人抽 ${s.startDraw} 張資源卡、${s.startDry} 塊旱田，並套用角色卡效果。</p>
+  <div class="row"><button class="btn primary" data-act="closeOver">知道了</button></div></div></div>`;
+}
+
+/* ---------- 開局設定 ---------- */
+let SETUP={n:3,names:['玩家一','玩家二','玩家三','玩家四'],roles:['random','random','random','random']};
+function setupHTML(){
+  const roles=cardsOf('role');
+  let seats='';
+  for(let i=0;i<SETUP.n;i++){
+    const r=SETUP.roles[i]!=='random'&&cardById(SETUP.roles[i]);
+    seats+=`<div class="seat glass" style="--i:${i};--pc:${pcolor(i)}">
+      <div class="av" style="background:${pcolor(i)}">${initial(SETUP.names[i])}</div>
+      <label class="muted" style="font-size:12px;font-weight:700">玩家名稱<input data-setup-name="${i}" value="${esc(SETUP.names[i])}" maxlength="10"></label>
+      <label class="muted" style="font-size:12px;font-weight:700;display:block;margin-top:10px">角色
+      <select data-setup-role="${i}"><option value="random">🎲 隨機角色</option>${roles.map(x=>`<option value="${x.id}" ${SETUP.roles[i]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+      <div class="rdesc">${r?esc(ruleText(r)):'開始時隨機分配一張角色卡。'}</div></div>`;
+  }
+  const dup=SETUP.roles.slice(0,SETUP.n).filter(x=>x!=='random');
+  const hasDup=dup.length!==new Set(dup).size;
+  return topbarHTML()+`<div class="setup">
+    <h1>開局設定</h1><p class="sub">幾個人玩？每人一個角色，輪流用同一台裝置操作。</p>
+    <div style="text-align:center"><div class="seg" role="radiogroup" aria-label="玩家人數">${[1,2,3,4].map(n=>`<button role="radio" aria-checked="${n===SETUP.n}" class="${n===SETUP.n?'on':''}" data-act="setN" data-n="${n}">${n} 人</button>`).join('')}</div>
+    <div class="muted" style="font-size:13px;margin-top:6px">${SETUP.n===1?'1 人＝單人測試':'半合作：要一起蓋完大圳，才有人能贏'}</div></div>
+    <div class="seats">${seats}</div>
+    ${roles.length<SETUP.n?`<p class="warn">角色卡只有 ${roles.length} 張，部分玩家將沒有角色。</p>`:''}
+    ${hasDup?'<p class="warn">有兩位玩家選了同一個角色，兩人都會得到這個角色的效果。</p>':''}
+    <div class="go"><button class="btn" data-act="goHome">返回</button><button class="btn big primary" data-act="startGame">開始遊戲 ▶</button></div>
+  </div>`;
+}
+
+/* ---------- 遊戲畫面 ---------- */
+function missingText(p,c){
+  const lack=Object.entries(c.cost||{}).filter(([k,v])=>(p.res[k]||0)<v).map(([k,v])=>`${resIcon(k)}${v-(p.res[k]||0)}`);
+  const reqs=(c.requires||[]).filter(r=>!reqOK(p,[r])).map(reqText);
+  return [lack.length?'還缺 '+lack.join(' '):'',reqs.length?'需要 '+reqs.join('、'):''].filter(Boolean).join('；');
+}
+function gameHTML(){
+  const p=cur(),s=S();const pr=curProject();const ev=G.event&&cardById(G.event);
+  const role=p.role&&cardById(p.role);
+  const ratio=p.tradeRatio||+s.bankRatio||4;
+  const me=G.turn, max=+s.maxRounds||8;
+  // 上方列：回合、通水、建設進度
+  const rounds=Array.from({length:max},(_,i)=>`<i class="${i+1<G.round?'past':i+1===G.round?'now':''}"></i>`).join('');
+  const bar=`<span class="chip" title="第 ${G.round} / ${max} 回合">第 <b data-v="round">${G.round}</b>/${max} 回合 <span class="rounds" aria-hidden="true">${rounds}</span></span>
+    <span class="chip flow ${G.flowing?'':'dry'}">${G.flowing?'<span class="drop">💧</span> 已通水':'🏜 尚未通水'}</span>
+    <span class="chip">🏗 建設 <b data-v="done">${G.done.length}</b>/${projects().length}</span>
+    ${G.flags.contribMult>1?`<span class="chip" style="color:var(--red)">✨ 貢獻分 ×${G.flags.contribMult}</span>`:''}`;
+  // 公共建設水路
+  const P=projects();
+  const projHTML=P.map((c,i)=>{
+    const done=G.done.includes(c.id),isCur=pr&&pr.id===c.id;
+    const t=projectTotals(c);
+    const needs=isCur?`<div class="needs">${projectResList(c).map(r=>{const rem=remaining(c,r),has=p.res[r]||0;
+      return `<div class="need ${rem<1?'ok':''}"><span class="ic">${resIcon(r)}</span><span>${rem<1?'已備齊':`還差 <b data-v="need-${r}">${rem}</b><br><small class="muted">你手上有 ${has}</small>`}</span>
+        ${rem>0?`<button class="btn small ${has>0?'primary':''}" data-act="contrib" data-res="${r}" ${has<1?'disabled':''} aria-label="投入 1 ${esc(resName(r))}">投入 1</button>`:'<span>✓</span>'}</div>`}).join('')}
+      <button class="btn small" data-act="contribAll" ${projectResList(c).some(r=>remaining(c,r)>0&&(p.res[r]||0)>0)?'':'disabled'}>一次投入所有能投的</button></div>`:'';
+    return `<li class="node ${done?'done':isCur?'cur':'locked'}"><span class="dot">${done?'✓':i+1}</span>
+      <div class="nname">${esc(c.name)}${c.unlockWater?' <span title="完成即通水">💧</span>':''}</div>
+      ${c.year?`<div class="yr">${esc(c.year)}</div>`:''}
+      ${done?'':`<div class="bar"><i style="width:${t.need?Math.round(t.paid/t.need*100):0}%"></i></div>`}${needs}</li>`}).join('');
+  const resOpts=sel=>DATA.resources.map(r=>`<option value="${r.id}" ${sel===r.id?'selected':''}>${r.icon} ${esc(r.name)}</option>`).join('');
+  const from=UI.from&&resById(UI.from)?UI.from:(DATA.resources[0]||{}).id, to=UI.to&&resById(UI.to)?UI.to:(DATA.resources[1]||DATA.resources[0]||{}).id;
+  const others=G.players.map((q,i)=>i).filter(i=>i!==me);
+  const gTo=others.includes(+UI.gTo)?+UI.gTo:others[0];
+  const capN=cap(p);
+  const drops=Array.from({length:capN},(_,i)=>`<i class="${i<p.water?'on':''}"></i>`).join('');
+  const lands=LANDS.filter(([k])=>(p.stats[k]||0)>0||k==='旱田'||k==='水田').map(([k,ic,lab])=>`<span class="land">${ic} ${lab} <b data-v="land-${k}">${p.stats[k]||0}</b></span>`).join('');
+  const extra=Object.entries(p.stats).filter(([k,v])=>v&&!LANDS.some(([x])=>x===k)&&k!=='vp').map(([k,v])=>`<span class="land">✨ ${esc(statName(k))} <b>${v}</b></span>`).join('');
+  const h=G.harvestData||{};
+  const maxScore=Math.max(1,...G.players.map(q=>score(q).total));
+  return topbarHTML(bar)+`<div class="game">
+    <aside class="panel glass">
+      <h3 class="ptitle"><i>🏗</i>公共建設<span class="sp"></span><span class="muted" style="letter-spacing:0;font-weight:600">全體合作</span></h3>
+      <ol class="route" style="--fill:${P.length?G.done.length/P.length:0}">${projHTML}</ol>
+      ${!pr?'<div class="goal">🎉 共同目標已達成！<br><small>繼續發展自己的田，衝高分數</small></div>':''}
+    </aside>
+
+    <main class="me glass mainc" style="--pc:${pcolor(me)}">
+      <div class="mehead">
+        <div class="av">${initial(p.name)}</div>
+        <div><h2>${esc(p.name)}</h2>${role?`<span class="chip" title="${esc(ruleText(role))}">🎭 ${esc(role.name)}</span> <small class="muted">${esc(ruleText(role))}</small>`:''}</div>
+        <div class="score"><b data-v="score">${score(p).total}</b><small>目前分數</small></div>
+      </div>
+      <div class="harvest"><span class="hi">🌾</span><div><b>這回合的收成</b>　抽到 ${(h.got||[]).join('')||'—'}<br>
+        <small class="muted">水田 ${h.wetUsed||0}/${h.wetN||0} 塊有水，收 ${h.wetRice||0} 🌾；看天田 ${h.dryRice||0}/${h.dryN||0} 塊收成</small></div></div>
+      <div class="mid">
+        <div class="res">${DATA.resources.map(r=>{const n=p.res[r.id]||0;return `<div class="rt ${n?'':'zero'}" title="${esc(r.name)}（產自${esc(r.tile)}）"><span class="ic">${r.icon}</span><b data-v="res-${r.id}">${n}</b><small>${esc(r.name)}</small></div>`}).join('')}</div>
+        <div class="tank"><div class="tl">💧 存水</div><div class="drops" aria-label="存水 ${p.water} / ${capN}">${drops||'<small>沒有容量</small>'}</div><small><b data-v="water">${p.water}</b> / ${capN}　${G.flowing?'':'（還沒通水）'}</small></div>
+      </div>
+      <div class="lands">${lands}${extra}</div>
+
+      <div class="market">
+        <h3 class="ptitle"><i>🛒</i>個人發展卡市場<span class="sp"></span><span class="muted" style="letter-spacing:0;font-weight:600">牌庫剩 ${G.devDeck.length} 張</span></h3>
+        <div class="mk hov">${G.market.map((id,i)=>{const c=cardById(id);if(!c)return '';const ok=canAfford(p,c.cost)&&reqOK(p,c.requires);
+          return `<div class="slot ${ok?'':'cant'}">${cardHTML(c)}<div class="why">${ok?'':esc(missingText(p,c))}</div><button class="btn ${ok?'primary':''}" data-act="buy" data-i="${i}" ${ok?'':'disabled'}>購買</button></div>`}).join('')||'<span class="muted">牌庫已空</span>'}</div>
+      </div>
+
+      <div class="acts">
+        <div class="act"><h3 class="ptitle"><i>🏦</i>銀行交易　${ratio} 換 1</h3>
+          <div class="row"><select id="tFrom" data-ui="from" aria-label="拿出的資源">${resOpts(from)}</select>×${ratio} → <select id="tTo" data-ui="to" aria-label="換到的資源">${resOpts(to)}</select>×1
+          <button class="btn small primary" data-act="trade">交易</button></div></div>
+        ${others.length?`<div class="act"><h3 class="ptitle"><i>🤝</i>給其他玩家（協商後交換）</h3>
+          <div class="row"><input id="gN" data-ui="gN" type="number" min="1" value="${Math.max(1,+UI.gN||1)}" style="width:64px" aria-label="數量"><select id="gRes" data-ui="gRes" aria-label="資源">${resOpts(UI.gRes)}</select> 給
+          <select id="gTo" data-ui="gTo" aria-label="給誰">${others.map(i=>`<option value="${i}" ${i===gTo?'selected':''}>${esc(G.players[i].name)}</option>`).join('')}</select>
+          <button class="btn small primary" data-act="give">給予</button></div></div>`:''}
+      </div>
+      <div class="endbar"><span class="muted">${G.turn+1<G.players.length?`下一位：${esc(G.players[G.turn+1].name)}`:G.round>=max?'這是最後一回合':`接著進入第 ${G.round+1} 回合`}</span>
+        <button class="btn big primary" data-act="endTurn">結束回合 ▶</button></div>
+    </main>
+
+    <aside class="col">
+      <div class="panel glass"><h3 class="ptitle"><i>📜</i>本回合事件</h3><div class="evcard hov">${ev?cardHTML(ev,{zoom:1}):'<span class="muted">（無）</span>'}</div></div>
+      <div class="panel glass players"><h3 class="ptitle"><i>👥</i>玩家</h3>${G.players.map((q,i)=>{const sc=score(q).total;const rc=q.role&&cardById(q.role);
+        return `<div class="pl ${i===me?'active':''}" style="--pc:${pcolor(i)}"><div class="av">${initial(q.name)}</div>
+          <div><b>${esc(q.name)}</b> ${rc?`<small style="display:inline">${esc(rc.name)}</small>`:''}
+          <small>${DATA.resources.map(r=>`${r.icon}${q.res[r.id]||0}`).join(' ')}　💧${q.water}/${cap(q)}<br>旱田 ${q.stats['旱田']||0}・水田 ${q.stats['水田']||0}・埤塘 ${q.stats['埤塘']||0}・聚落 ${q.stats['聚落']||0}</small></div>
+          <div class="sc" data-v="sc-${i}">${sc}</div><div class="sb"><i style="width:${Math.round(sc/maxScore*100)}%"></i></div></div>`}).join('')}</div>
+      <div class="panel glass"><h3 class="ptitle"><i>🧾</i>紀錄</h3><div class="log">${G.log.slice(0,80).map(l=>`<div>${l}</div>`).join('')}</div></div>
+    </aside>
+  </div>`;
+}
+// 回合開場／換人：翻開事件卡、顯示輪到誰
+function splashHTML(){
+  const sp=G.splash,p=G.players[sp.turn],h=G.harvestData||{};
+  const ev=sp.round&&sp.round.event&&cardById(sp.round.event);
+  const multi=G.players.length>1;
+  return `<div class="overlay"><div class="splash" role="dialog" aria-modal="true" style="--pc:${pcolor(sp.turn)}">
+    ${sp.round?`<div class="rk">ROUND ${sp.round.n} / ${+S().maxRounds||8}</div><h2>第 ${sp.round.n} 回合</h2>
+      ${ev?`<div class="evwrap">${cardHTML(ev)}<div class="evtxt"><b>📜 ${esc(ev.name)}</b><p style="opacity:.9;margin-top:6px">${esc(ruleText(ev)).replace(/\n/g,'<br>')||'沒有特別效果。'}</p></div></div>`:''}
+      <div><span class="info">${sp.round.water}</span></div>`:''}
+    ${multi||!sp.round?`<div class="${sp.round?'who':''}"><div class="av">${initial(p.name)}</div><h2 style="margin:0">輪到 ${esc(p.name)}</h2>
+      <p style="opacity:.85;margin-top:6px">${multi?'請把裝置交給這位玩家。':''}收成：抽到 ${(h.got||[]).join('')||'—'}，收 ${(h.wetRice||0)+(h.dryRice||0)} 🌾</p></div>`:''}
+    <button class="btn big primary" data-act="closeSplash" style="background:#fff;color:var(--blue-2)">${multi?`開始 ${esc(p.name)} 的回合`:'開始這回合'} ▶</button>
+  </div></div>`;
+}
+function endHTML(){
+  const s=S();const success=!curProject();
+  const rows=G.players.map((p,i)=>({p,i,sc:score(p)})).sort((a,b)=>b.sc.total-a.sc.total);
+  const half=!success&&s.failMode!=='allLose';
+  const mem=cardsOf('memory');
+  const medal=['🥇','🥈','🥉','4'];
+  return topbarHTML()+`<div class="end">
+    <div class="result ${success?'win':'lose'}"><div class="rip" aria-hidden="true"><i></i><i></i><i></i></div>
+      <h1>${success?'🌾 千塘之鄉':'🏜 大圳沒有完成'}</h1>
+      <p>${success?`${s.maxRounds} 回合內完成全部公共建設，共同目標達成！`:(s.failMode==='allLose'?'共同目標未達成：全體失敗。':'共同目標未達成：全體分數減半。')}</p></div>
+    <div class="rank">
+      <div class="rr head"><span>名次</span><span>玩家</span><span class="c">貢獻分</span><span class="c">卡牌分數</span><span class="c">水田</span><span style="text-align:right">總分</span></div>
+      ${rows.map((r,k)=>`<div class="rr glass" style="--i:${k}"><span class="pos">${success||half?medal[k]||k+1:'—'}</span>
+        <span><b>${esc(r.p.name)}</b> ${r.p.role&&cardById(r.p.role)?`<small class="muted">${esc(cardById(r.p.role).name)}</small>`:''}</span>
+        <span class="c">${r.sc.contrib}</span><span class="c">${r.sc.vp}</span><span class="c">${r.sc.wet}</span>
+        <span class="tot">${half?Math.floor(r.sc.total/2):r.sc.total}</span></div>`).join('')}
+    </div>
+    ${mem.length?`<h2>今昔對照：這些埤塘後來怎麼了？</h2><p class="muted">點一下可以放大看。</p><div class="gallery hov">${mem.map(c=>cardHTML(c,{zoom:1})).join('')}</div>`:''}
+    <div class="btns"><button class="btn big primary" data-act="goSetup">再玩一次</button><button class="btn big" data-act="goHome">回遊戲首頁</button><button class="btn big" data-act="goSite">🏠 網站首頁</button></div></div>`;
+}
+
+/* ---------- 卡牌一覽 ---------- */
+function galleryHTML(){
+  const tabs=[['all','全部'],...Object.entries(TYPES).map(([k,v])=>[k,v.label]),['resource','資源卡']];
+  let cards='';
+  const list=GAL.tab==='all'?DATA.cards:GAL.tab==='resource'?[]:DATA.cards.filter(c=>c.type===GAL.tab);
+  cards+=list.map(c=>cardHTML(c,{copies:1,zoom:1})).join('');
+  if(GAL.tab==='all'||GAL.tab==='resource')cards+=DATA.resources.map(r=>resCardHTML(r,{copies:1})).join('');
+  const n=(GAL.tab==='resource'?0:list.length)+(GAL.tab==='all'||GAL.tab==='resource'?DATA.resources.length:0);
+  return `<div class="full" role="dialog" aria-modal="true" aria-label="卡牌一覽"><div class="fhead"><b>🃏 卡牌一覽</b>
+    ${tabs.map(([k,l])=>`<button class="btn small ${GAL.tab===k?'on':''}" data-act="galTab" data-t="${k}">${l}</button>`).join('')}
+    <span style="flex:1"></span><span style="font-size:13px;opacity:.8">${n} 種・點卡牌可放大</span><button class="btn small" data-act="closeOver">✕ 關閉</button></div>
+    <div class="fbody"><div class="gallery hov">${cards||'<span class="muted">沒有卡牌</span>'}</div></div></div>`;
+}
+function zoomHTML(c){
+  return `<div class="zoomwrap">${cardHTML(c)}</div>
+    ${c.history?`<p><b>史料小故事</b><br>${esc(c.history)}</p>`:''}${c.source?`<p class="muted">出處：${esc(c.source)}</p>`:''}
+    <div class="row"><button class="btn primary" data-act="modalNo">關閉</button></div>`;
+}
+
+/* ================= 6. 遊戲邏輯 ================= */
+function log(m){G.log.unshift(`<b class="r">R${G.round}</b> ${m}`);if(G.log.length>150)G.log.pop()}
+function cur(){return G.players[G.turn]}
+function cap(p){return (+S().waterCapBase||0)+(p.stats['埤塘']||0)*(+S().waterPerPond||0)}
+function drawRes(n){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const tot=Object.values(G.pool).reduce((a,b)=>a+b,0);
+    if(tot<=0)break;
+    let x=Math.random()*tot;
+    for(const k in G.pool){x-=G.pool[k];if(x<0){G.pool[k]--;out.push(k);break}}
+  }
+  return out;
+}
+function give(p,res,n){p.res[res]=(p.res[res]||0)+n;G.pool[res]=Math.max(0,(G.pool[res]||0)-n)}
+function pay(p,res,n){n=Math.min(n,p.res[res]||0);p.res[res]-=n;G.pool[res]=(G.pool[res]||0)+n;return n}
+function addWater(p,n){const before=p.water;p.water=Math.max(0,Math.min(cap(p),p.water+n));return p.water-before}
+function hasAny(p,list){return String(list||'').split(',').map(s=>s.trim()).filter(Boolean).some(s=>(p.stats[s]||0)>0)}
+function targets(t,self){if(t==='all')return G.players;if(t==='others')return G.players.filter(p=>p!==self);return self?[self]:G.players}
+
+function applyEffects(effs,self,srcName){
+  for(const e of effs||[]){
+    const n=Number(e.n)||0;
+    switch(e.t){
+      case 'gain':targets(e.target,self).forEach(p=>give(p,e.res,n));break;
+      case 'lose':targets(e.target,self).forEach(p=>{if(!hasAny(p,e.unless))pay(p,e.res,n)});break;
+      case 'stat':targets(e.target,self).forEach(p=>{p.stats[e.stat]=Math.max(0,(p.stats[e.stat]||0)+n)});break;
+      case 'draw':targets(e.target,self).forEach(p=>drawRes(n).forEach(r=>p.res[r]=(p.res[r]||0)+1));break;
+      case 'income':if(self)self.income[e.res]=(self.income[e.res]||0)+n;break;
+      case 'water':targets(e.target,self).forEach(p=>addWater(p,n));break;
+      case 'waterLoseAll':targets(e.target,self).forEach(p=>{if(hasAny(p,e.unless)){if(p.stats['輪灌']&&!p.stats['埤塘'])p.water=Math.min(p.water,1)}else p.water=0});break;
+      case 'noWater':G.flags.noWater=true;break;
+      case 'waterMod':G.flags.waterMod+=n;break;
+      case 'projectCost':{const pr=curProject();if(pr){G.extra[pr.id]=G.extra[pr.id]||{};G.extra[pr.id][e.res]=(G.extra[pr.id][e.res]||0)+n}break}
+      case 'contribMult':G.flags.contribMult*=n||1;break;
+      case 'fieldBonus':G.flags.fieldBonus+=n;break;
+      case 'tradeRatio':if(self)self.tradeRatio=n;break;
+      case 'note':if(e.text)log('📝 '+esc(e.text));break;
+    }
+    // 埤塘變少時，超過容量的水會流走
+    if(e.t==='stat'&&e.stat==='埤塘')targets(e.target,self).forEach(p=>{p.water=Math.min(p.water,cap(p))});
+  }
+}
+function reqOK(p,reqs){
+  return (reqs||[]).every(r=>r.k==='water'?G.flowing:(p.stats[r.stat]||0)>=(Number(r.min)||0));
+}
+function canAfford(p,cost){return Object.entries(cost||{}).every(([k,v])=>(p.res[k]||0)>=v)}
+
+function projects(){return cardsOf('project')}
+function curProject(){return projects().find(c=>!G.done.includes(c.id))||null}
+function remaining(pr,res){
+  const need=(pr.cost[res]||0)+((G.extra[pr.id]||{})[res]||0)-((G.paid[pr.id]||{})[res]||0);
+  return Math.max(0,need);
+}
+function projectResList(pr){const s=new Set([...Object.keys(pr.cost||{}),...Object.keys(G.extra[pr.id]||{})]);return [...s].filter(k=>(pr.cost[k]||0)+((G.extra[pr.id]||{})[k]||0)>0)}
+function projectTotals(pr){let need=0,paid=0;projectResList(pr).forEach(r=>{const tot=(pr.cost[r]||0)+((G.extra[pr.id]||{})[r]||0);need+=tot;paid+=Math.min(tot,(G.paid[pr.id]||{})[r]||0)});return {need,paid}}
+
+function startGame(){
+  const s=S();
+  const pool={};DATA.resources.forEach(r=>pool[r.id]=+r.copies||0);
+  const roleIds=shuffle(cardsOf('role').map(c=>c.id));
+  const chosen=SETUP.roles.slice(0,SETUP.n).filter(r=>r!=='random');
+  G={round:0,turn:0,players:[],pool,done:[],paid:{},extra:{},flowing:false,log:[],event:null,
+     flags:{},devDeck:[],market:[],eventDeck:[],harvest:'',harvestData:null,splash:null,roundInfo:null,over:false};
+  for(let i=0;i<SETUP.n;i++){
+    let rid=SETUP.roles[i];
+    if(rid==='random'){rid=roleIds.find(x=>!chosen.includes(x));if(rid)chosen.push(rid)}
+    const p={name:String(SETUP.names[i]||'').trim()||('玩家'+(i+1)),role:rid||null,res:{},water:0,income:{},tradeRatio:null,contrib:0,
+      stats:{'旱田':+s.startDry||0,'水田':+s.startWet||0,'埤塘':+s.startPond||0,'聚落':0,vp:0,riceBonus:0,contribBonus:0,extraDraw:0},cards:[]};
+    DATA.resources.forEach(r=>p.res[r.id]=0);
+    G.players.push(p);
+  }
+  G.players.forEach(p=>{
+    drawRes(+s.startDraw||0).forEach(r=>p.res[r]++);
+    const rc=p.role&&cardById(p.role);if(rc)applyEffects(rc.effects,p,rc.name);
+  });
+  G.devDeck=shuffle(cardsOf('dev').flatMap(c=>Array(Math.max(0,+c.copies||0)).fill(c.id)));
+  refillMarket();
+  VIEW='game';G.log=[];LASTV={};UI.gTo=null;
+  startRound();
+}
+function refillMarket(){const n=Math.max(0,+S().marketSize||0)||3;while(G.market.length<n&&G.devDeck.length)G.market.push(G.devDeck.pop())}
+function drawEvent(){
+  if(!G.eventDeck.length)G.eventDeck=shuffle(cardsOf('event').flatMap(c=>Array(Math.max(0,+c.copies||0)).fill(c.id)));
+  return G.eventDeck.pop()||null;
+}
+function startRound(){
+  G.round++;
+  if(G.round>(+S().maxRounds||8)){return endGame()}
+  G.flags={noWater:false,waterMod:0,contribMult:1,fieldBonus:0};
+  const eid=drawEvent();G.event=eid;
+  const ev=eid&&cardById(eid);
+  if(ev){log(`📜 事件：<b>${esc(ev.name)}</b>　${esc(ruleText(ev)).replace(/\n/g,'；')}`);applyEffects(ev.effects,null,ev.name)}
+  let water='🏜 還沒通水：先把公共建設蓋好';
+  if(G.flowing&&!G.flags.noWater){
+    const n=(+S().baseWater||0)+G.flags.waterMod;
+    G.players.forEach(p=>addWater(p,n));
+    log(`💧 配水：每人 ${n>=0?'+':''}${n}（受埤塘容量限制）`);
+    water=`💧 配水：每人 ${n>=0?'+':''}${n}`;
+  } else if(G.flowing){log('💧 本回合沒有配水');water='💧 本回合沒有配水'}
+  G.roundInfo={n:G.round,event:eid,water};
+  G.turn=0;startTurn();
+}
+function startTurn(){
+  const p=cur(),s=S();const got=[];
+  drawRes((+s.drawPerTurn||0)+(p.stats.extraDraw||0)).forEach(r=>{p.res[r]++;got.push(resIcon(r))});
+  for(const [r,n] of Object.entries(p.income)){give(p,r,n);for(let i=0;i<n;i++)got.push(resIcon(r))}
+  let wetRice=0,wetUsed=0;
+  for(let i=0;i<(p.stats['水田']||0);i++){
+    if(p.water>0){p.water--;wetUsed++;wetRice+=1+(p.stats.riceBonus||0)+G.flags.fieldBonus}
+  }
+  let dryRice=0;for(let i=0;i<(p.stats['旱田']||0);i++)if(Math.random()<(+s.dryChance||0))dryRice++;
+  if(wetRice+dryRice)give(p,'rice',wetRice+dryRice);
+  const dryN=p.stats['旱田']||0,wetN=p.stats['水田']||0;
+  G.harvestData={got,wetUsed,wetN,wetRice,dryRice,dryN};
+  G.harvest=`抽到 ${got.join('')||'—'}；水田 ${wetUsed}/${wetN} 塊有水，收 ${wetRice} 🌾；看天田 ${dryRice}/${dryN} 塊收成。`;
+  log(`▶ <b>${esc(p.name)}</b> 收成：${G.harvest}`);
+  // 開場畫面：每回合第一位會看到事件卡；多人時每次換人都提示
+  G.splash=(G.turn===0||G.players.length>1)?{turn:G.turn,round:G.turn===0?G.roundInfo:null}:null;
+}
+function endTurn(){
+  LASTV={};   // 換人了，數字不要拿上一位玩家來比
+  G.turn++;
+  if(G.turn>=G.players.length)startRound();else startTurn();
+  if(VIEW==='game')window.scrollTo({top:0,behavior:'smooth'});
+  render();
+}
+function contributeOne(res){
+  const p=cur(),pr=curProject();if(!pr)return false;
+  if((p.res[res]||0)<1||remaining(pr,res)<1)return false;
+  pay(p,res,1);
+  G.paid[pr.id]=G.paid[pr.id]||{};G.paid[pr.id][res]=(G.paid[pr.id][res]||0)+1;
+  const pts=((+S().vpPerContrib||0)+(p.stats.contribBonus||0))*G.flags.contribMult;
+  p.contrib+=pts;
+  if(projectResList(pr).every(r=>remaining(pr,r)<=0)){
+    G.done.push(pr.id);
+    log(`🏗 公共建設完成：<b>${esc(pr.name)}</b>`);
+    applyEffects(pr.effects,p,pr.name);
+    if(pr.unlockWater&&!G.flowing){G.flowing=true;log('💧 <b>通水了！</b>從下一回合開始配水。');toast('💧 通水了！從下一回合開始配水')}
+    else toast(`🏗 ${pr.name} 完成！`);
+    if(!curProject()){log('🎉 全部公共建設完成，共同目標達成！');toast('🎉 共同目標達成！')}
+  }
+  return true;
+}
+function contribute(res){if(contributeOne(res))render()}
+function contributeAll(){
+  const p=cur();let n=0,guard=0;
+  // 依序投入：每次把目前這項建設能投的都投進去（完成後會接著投下一項）
+  while(guard++<200){const pr=curProject();if(!pr)break;const r=projectResList(pr).find(x=>remaining(pr,x)>0&&(p.res[x]||0)>0);if(!r)break;contributeOne(r);n++}
+  if(n){log(`🏗 ${esc(p.name)} 一次投入 ${n} 份資源`);toast(`投入了 ${n} 份資源`)}else toast('目前沒有可以投入的資源');
+  render();
+}
+function bankTrade(){
+  const p=cur();const from=$('#tFrom').value,to=$('#tTo').value;const ratio=p.tradeRatio||+S().bankRatio||4;
+  if(from===to)return toast('請選兩種不同的資源');
+  if((p.res[from]||0)<ratio)return toast(`${resIcon(from)}${resName(from)} 不夠 ${ratio} 個`);
+  pay(p,from,ratio);give(p,to,1);
+  log(`🏦 ${esc(p.name)} 用 ${ratio} ${resIcon(from)} 換 1 ${resIcon(to)}`);render();
+}
+function giveTo(){
+  const p=cur();const r=$('#gRes').value,i=+$('#gTo').value,n=Math.max(1,Math.floor(+$('#gN').value||1));const q=G.players[i];
+  if(!q||q===p)return toast('請選擇要給的玩家');
+  if((p.res[r]||0)<n)return toast(`${resIcon(r)}${resName(r)} 只有 ${p.res[r]||0} 個`);
+  p.res[r]-=n;q.res[r]=(q.res[r]||0)+n;
+  log(`🤝 ${esc(p.name)} 給 ${esc(q.name)} ${n} ${resIcon(r)}`);toast(`已給 ${q.name} ${n} ${resIcon(r)}`);render();
+}
+function buy(idx){
+  const p=cur();const id=G.market[idx];const c=cardById(id);if(!c)return;
+  if(!canAfford(p,c.cost)||!reqOK(p,c.requires))return;
+  Object.entries(c.cost||{}).forEach(([k,v])=>pay(p,k,v));
+  applyEffects(c.effects,p,c.name);p.cards.push(id);
+  G.market.splice(idx,1);refillMarket();
+  log(`🛒 ${esc(p.name)} 購買 <b>${esc(c.name)}</b>`);toast(`🛒 買下「${c.name}」`);render();
+}
+function score(p){return {contrib:p.contrib,vp:p.stats.vp||0,wet:(p.stats['水田']||0)*(+S().vpPerWet||0),get total(){return this.contrib+this.vp+this.wet}}}
+function endGame(){G.round=Math.min(G.round,+S().maxRounds||8);G.splash=null;VIEW='end';window.scrollTo({top:0});render()}
+
+/* ================= 7. 開發者模式 ================= */
+function edTabs(){return [...Object.entries(TYPES).map(([k,v])=>[k,v.label]),['resource','資源卡'],['settings','遊戲設定'],['io','匯入／匯出'],['check','內容檢查']]}
+function editorHTML(){
+  const tab=ED.tab;
+  let body='';
+  if(TYPES[tab])body=edCardsHTML(tab);
+  else if(tab==='resource')body=edResHTML();
+  else if(tab==='settings')body=edSettingsHTML();
+  else if(tab==='io')body=edIOHTML();
+  else body=edCheckHTML();
+  return `<div class="full" role="dialog" aria-modal="true" aria-label="開發者模式"><div class="fhead"><b>🛠 開發者模式</b>
+    ${edTabs().map(([k,l])=>`<button class="btn small ${tab===k?'on':''}" data-act="edTab" data-t="${k}">${l}</button>`).join('')}
+    <span style="flex:1"></span><span style="font-size:12px;opacity:.8">修改會自動儲存在這台電腦</span>
+    <button class="btn small" data-act="closeOver">✕ 關閉</button></div><div class="fbody">${body}</div></div>`;
+}
+function edCardsHTML(type){
+  const list=cardsOf(type);
+  if(!ED.sel||!list.find(c=>c.id===ED.sel))ED.sel=list[0]?list[0].id:null;
+  const c=ED.sel&&cardById(ED.sel);
+  const items=list.map(x=>`<div class="it ${x.id===ED.sel?'sel':''}" data-act="edSel" data-id="${esc(x.id)}">
+    <span class="badge b-${esc(x.status)}">${esc(x.status)}</span><span class="nm" style="flex:1">${esc(x.name)}</span><small class="muted">×${x.copies}</small></div>`).join('');
+  return `<div class="ed">
+    <div class="panel glass list"><div class="row" style="margin-bottom:8px"><button class="btn small primary" data-act="edAdd">＋ 新增</button>
+      ${c?`<button class="btn small" data-act="edDup">複製</button><button class="btn small" data-act="edUp" aria-label="往上移">↑</button><button class="btn small" data-act="edDown" aria-label="往下移">↓</button>`:''}</div>
+      ${items||'<span class="muted">還沒有卡牌</span>'}
+      <p class="tip">${type==='project'?'公共建設依清單順序建造（用 ↑↓ 調整）。':''}</p></div>
+    <div class="panel glass form" id="edForm">${c?edFormHTML(c):'<p class="muted">按「＋ 新增」建立第一張卡。</p>'}</div>
+    <div class="panel glass"><b>預覽</b><div id="edPreview" style="margin-top:10px">${c?cardHTML(c,{big:1}):''}</div></div>
+  </div>`;
+}
+function edFormHTML(c){
+  const f=(k,lab,tip,ph)=>`<label>${lab}<input data-f="${k}" value="${esc(c[k]==null?'':c[k])}" placeholder="${esc(ph||'')}"></label>${tip?`<div class="tip">${tip}</div>`:''}`;
+  const ta=(k,lab,tip,ph,rows)=>`<label>${lab}<textarea data-f="${k}" rows="${rows||3}" placeholder="${esc(ph||'')}">${esc(c[k]||'')}</textarea></label>${tip?`<div class="tip">${tip}</div>`:''}`;
+  let h=`<div class="row"><b style="font-size:17px">${TYPES[c.type].label}</b><span class="muted">編號 ${esc(c.id)}</span><span style="flex:1"></span>
+    <button class="btn small danger" data-act="edDel">刪除這張</button></div>
+    <div class="grid2">${f('name','卡名')}
+      <label>張數<input data-f="copies" type="number" min="0" value="${+c.copies||0}"></label></div>
+    <div class="grid2"><label>史料狀態<select data-f="status">${STATUSES.map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}</select></label>
+      ${c.type!=='memory'?f('year','年代（可空白）'):'<span></span>'}</div>
+    <div class="tip">史料＝文獻有記載；待核＝還沒找到出處或有矛盾；遊戲化＝為了玩法設計，非史實。</div>`;
+  if(c.type==='memory'){
+    h+=ta('then','昔','', '例：1928 年辨天池',2)+ta('now','今','','例：今陽明運動公園',2);
+  } else {
+    if(c.type==='project'||c.type==='dev'){
+      h+=`<label>${c.type==='project'?'建造需求':'購買花費'}</label><div class="costgrid">${DATA.resources.map(r=>`<label>${r.icon}<input type="number" min="0" data-cost="${esc(r.id)}" value="${c.cost[r.id]||0}" aria-label="${esc(r.name)}"></label>`).join('')}</div>`;
+    }
+    if(c.type==='project')h+=`<label><input type="checkbox" data-f="unlockWater" ${c.unlockWater?'checked':''}> 完成這張就「通水」（開始每回合配水）</label>`;
+    if(c.type==='dev')h+=edReqHTML(c);
+    h+=edEffHTML(c);
+    h+=ta('text','規則文字（玩家看到的說明）','留白＝依上面的效果自動產生。若寫了文字，卡面就顯示你寫的（效果仍照設定執行）。',ruleText(Object.assign({},c,{text:''})),3);
+  }
+  h+=ta('history','史料小故事（卡面下方）','建議 60 字內，卡面空間有限。','',3)+f('source','出處','史料卡務必填寫，方便查核。');
+  h+=`<label>圖片</label><div class="row"><input type="file" accept="image/*" data-img aria-label="上傳圖片"><input data-f="image" value="${esc(c.image&&c.image.startsWith('data:')?'(已上傳圖片)':c.image||'')}" placeholder="或貼上圖片網址" style="flex:1">
+    ${c.image?'<button class="btn small" data-act="edImgClear">移除圖片</button>':''}</div>`;
+  return h;
+}
+function edReqHTML(c){
+  return `<label>購買條件</label>${(c.requires||[]).map((r,i)=>`<div class="effrow">
+    <select data-req="${i}" data-rf="k"><option value="stat" ${r.k==='stat'?'selected':''}>數值至少</option><option value="water" ${r.k==='water'?'selected':''}>已通水</option></select>
+    ${r.k==='stat'?`<input class="w" list="statList" data-req="${i}" data-rf="stat" value="${esc(r.stat||'')}" placeholder="例：旱田"> ≥ <input type="number" data-req="${i}" data-rf="min" value="${r.min||0}">`:''}
+    <button class="btn small danger" data-act="reqDel" data-i="${i}" aria-label="刪除條件">✕</button></div>`).join('')}
+    <button class="btn small" data-act="reqAdd" style="margin-top:6px">＋ 條件</button>`;
+}
+function edEffHTML(c){
+  const rows=(c.effects||[]).map((e,i)=>{
+    const def=EFFECTS[e.t]||{p:[]};
+    const ps=def.p.map(k=>{
+      if(k==='target')return `<select data-eff="${i}" data-ef="target">${Object.entries(TARGETS).map(([v,l])=>`<option value="${v}" ${e.target===v?'selected':''}>${l}</option>`).join('')}</select>`;
+      if(k==='res')return `<select data-eff="${i}" data-ef="res">${DATA.resources.map(r=>`<option value="${esc(r.id)}" ${e.res===r.id?'selected':''}>${r.icon}${esc(r.name)}</option>`).join('')}</select>`;
+      if(k==='n')return `<input type="number" data-eff="${i}" data-ef="n" value="${e.n==null?1:e.n}" title="數量">`;
+      if(k==='stat')return `<input class="w" list="statList" data-eff="${i}" data-ef="stat" value="${esc(e.stat||'')}" placeholder="數值名稱">`;
+      if(k==='unless')return `<input class="w" data-eff="${i}" data-ef="unless" value="${esc(e.unless||'')}" placeholder="例外：持有…（逗號分隔）">`;
+      if(k==='text')return `<input class="w" style="width:240px" data-eff="${i}" data-ef="text" value="${esc(e.text||'')}" placeholder="顯示的文字">`;
+      return '';
+    }).join('');
+    return `<div class="effrow"><select data-eff="${i}" data-ef="t">${Object.entries(EFFECTS).map(([k,v])=>`<option value="${k}" ${e.t===k?'selected':''}>${v.label}</option>`).join('')}</select>${ps}
+      <button class="btn small" data-act="effUp" data-i="${i}" aria-label="往上移">↑</button><button class="btn small danger" data-act="effDel" data-i="${i}" aria-label="刪除效果">✕</button></div>`;
+  }).join('');
+  const when={role:'開局時套用',project:'建設完成時套用',dev:'購買時套用',event:'翻開時套用'}[c.type]||'';
+  return `<label>效果（${when}）</label>${rows}<button class="btn small" data-act="effAdd" style="margin-top:6px">＋ 效果</button>
+    <datalist id="statList"><option value="旱田"><option value="水田"><option value="埤塘"><option value="聚落"><option value="vp"><option value="riceBonus"><option value="contribBonus"><option value="extraDraw"><option value="輪灌"></datalist>
+    <div class="tip">數值名稱：旱田、水田、埤塘、聚落、vp（分數）、riceBonus（每塊水田多收）、contribBonus（投入公共建設多得分）、extraDraw（每回合多抽）、輪灌（乾旱保留 1 水滴）。也可以自創名稱，再拿來當「例外」或「購買條件」。</div>`;
+}
+function edResHTML(){
+  return `<div class="panel glass edpanel"><p class="muted">資源的「代號」被卡牌花費使用，請不要隨意刪除。張數＝資源牌庫的張數（試玩時從這裡抽）。</p>
+  <table>${DATA.resources.map((r,i)=>`<tr style="border-top:1px solid var(--line)">
+   <td><small class="muted">${esc(r.id)}</small></td>
+   <td><input data-res="${i}" data-rf="icon" value="${esc(r.icon)}" style="width:54px" aria-label="圖示"></td>
+   <td><input data-res="${i}" data-rf="name" value="${esc(r.name)}" style="width:90px" aria-label="名稱"></td>
+   <td>地形 <input data-res="${i}" data-rf="tile" value="${esc(r.tile)}" style="width:100px"></td>
+   <td>張數 <input type="number" data-res="${i}" data-rf="copies" value="${+r.copies||0}" style="width:70px"></td>
+   <td><input type="color" data-res="${i}" data-rf="color" value="${esc(r.color)}" aria-label="顏色"></td>
+   <td><select data-res="${i}" data-rf="status">${STATUSES.map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select></td>
+   <td><button class="btn small danger" data-act="resDel" data-i="${i}">刪除</button></td></tr>
+   <tr><td></td><td colspan="7"><div class="row"><input data-res="${i}" data-rf="history" value="${esc(r.history)}" placeholder="史料小故事" style="flex:2"><input data-res="${i}" data-rf="source" value="${esc(r.source)}" placeholder="出處" style="flex:1"></div></td></tr>`).join('')}</table>
+  <button class="btn small primary" data-act="resAdd" style="margin-top:10px">＋ 新增資源</button>
+  <div class="gallery" style="margin-top:16px;justify-content:flex-start">${DATA.resources.map(r=>resCardHTML(r)).join('')}</div></div>`;
+}
+const SETTING_DEFS=[
+ ['maxRounds','回合數上限'],['startDraw','開局每人抽幾張資源卡'],['drawPerTurn','每回合抽幾張資源卡'],['bankRatio','銀行交易：幾換 1'],
+ ['marketSize','發展卡市場張數'],['startDry','開局旱田數'],['startWet','開局水田數'],['startPond','開局埤塘數'],
+ ['baseWater','通水後每回合配水'],['waterCapBase','基本存水上限'],['waterPerPond','每座埤塘多存幾滴'],
+ ['dryChance','看天田收成機率（0～1）'],['vpPerContrib','每投入 1 份資源的貢獻分'],['vpPerWet','每塊水田的分數']];
+function edSettingsHTML(){
+  const s=S();
+  return `<div class="panel glass edpanel" style="max-width:680px">${SETTING_DEFS.map(([k,l])=>`<div class="setrow"><span>${l}</span><input type="number" step="any" min="0" data-set="${k}" value="${s[k]}" style="width:110px"></div>`).join('')}
+   <div class="setrow"><span>共同目標失敗時</span><select data-set="failMode"><option value="allLose" ${s.failMode==='allLose'?'selected':''}>全體失敗</option><option value="half" ${s.failMode==='half'?'selected':''}>全體分數減半</option></select></div>
+   <div class="setrow"><span>內容版本名稱</span><input data-meta="version" value="${esc(DATA.meta.version||'')}"></div>
+   <p class="tip">開發者模式的入口已隱藏，畫面上不會出現按鈕。要開啟：按 Ctrl＋Shift＋D，或在網址後面加上 #dev。</p></div>`;
+}
+function edIOHTML(){
+  return `<div class="panel glass edpanel">
+   <h3>給組員／換電腦</h3>
+   <p><button class="btn primary" data-act="exportHTML">⬇ 下載含目前內容的 HTML</button>　組員打開這個檔案就是你現在的版本（最推薦）。</p>
+   <p><button class="btn" data-act="exportJSON">⬇ 匯出 JSON</button>　<button class="btn" data-act="pickJSON">⬆ 匯入 JSON</button><input type="file" id="jsonFile" accept=".json,application/json" style="display:none">　只交換卡牌內容。匯入會<b>取代</b>目前內容。</p>
+   <p><button class="btn" data-act="exportCSV">⬇ 匯出 CSV（Excel 可開）</button>　給組員或老師用表格檢查文字（只供檢視，不能匯回）。</p>
+   <h3 style="margin-top:18px">還原</h3>
+   <p><button class="btn danger" data-act="resetData">還原成這個檔案內建的內容</button>　會清掉這台電腦上的修改，建議先匯出 JSON。</p>
+   <p class="tip">修改存在「這台電腦＋這個瀏覽器」。換瀏覽器、清除瀏覽資料或用無痕視窗都會看不到，請定期匯出。</p></div>`;
+}
+function issues(){
+  const out=[];const rids=DATA.resources.map(r=>r.id);
+  const ids={};DATA.cards.forEach(c=>{ids[c.id]=(ids[c.id]||0)+1});
+  Object.entries(ids).forEach(([k,v])=>{if(v>1)out.push(['err',`編號 ${k} 重複了 ${v} 次`])});
+  DATA.cards.forEach(c=>{
+    const n=`【${TYPES[c.type]?TYPES[c.type].short:c.type}】${c.name}`;
+    if(c.status==='待核')out.push(['warn',`${n}：標為「待核」`+(c.source?`（${c.source}）`:'')]);
+    if(c.status==='史料'&&!String(c.source||'').trim())out.push(['err',`${n}：標為史料，但沒有填出處`]);
+    Object.keys(c.cost||{}).forEach(k=>{if(c.cost[k]>0&&!rids.includes(k))out.push(['err',`${n}：花費用到不存在的資源 ${k}`])});
+    (c.effects||[]).forEach(e=>{if(e.res&&!rids.includes(e.res)&&EFFECTS[e.t]&&EFFECTS[e.t].p.includes('res'))out.push(['err',`${n}：效果用到不存在的資源 ${e.res}`]);if(!EFFECTS[e.t])out.push(['err',`${n}：未知的效果類型 ${e.t}`])});
+    if((c.history||'').length>80)out.push(['warn',`${n}：史料文字 ${c.history.length} 字，卡面可能放不下`]);
+    if(c.type!=='memory'&&!(c.effects||[]).length&&!String(c.text||'').trim())out.push(['warn',`${n}：沒有效果也沒有規則文字`]);
+  });
+  DATA.resources.forEach(r=>{if(r.status==='史料'&&!r.source)out.push(['err',`【資源】${r.name}：標為史料，但沒有出處`])});
+  if(!rids.includes('rice'))out.push(['err','沒有代號為 rice 的資源：田的收成會出錯']);
+  if(!projects().length)out.push(['err','沒有任何公共建設卡，共同目標無法達成']);
+  if(projects().length&&!projects().some(c=>c.unlockWater))out.push(['warn','沒有任何公共建設會「通水」，水田永遠沒有水']);
+  if(!cardsOf('event').length)out.push(['warn','沒有歷史事件卡']);
+  return out;
+}
+function edCheckHTML(){
+  const is=issues();const total=DATA.cards.length;const cnt=s=>DATA.cards.filter(c=>c.status===s).length;
+  const need=projects().reduce((a,c)=>a+Object.values(c.cost||{}).reduce((x,y)=>x+(+y||0),0),0);
+  const s=S();
+  return `<div class="panel glass edpanel">
+   <h3>統計</h3><p>卡牌 ${total} 種：史料 ${cnt('史料')}、待核 ${cnt('待核')}、遊戲化 ${cnt('遊戲化')}。</p>
+   <p>公共建設總需求 ${need} 份資源。3 人遊戲約可抽到 ${3*s.maxRounds*s.drawPerTurn+3*s.startDraw} 張資源卡（不含收成稻米與角色收入），可用來粗估難度。</p>
+   <h3>需要處理的地方（${is.length}）</h3>
+   <ul class="issues">${is.map(([k,m])=>`<li>${k==='err'?'❌':'⚠️'} ${esc(m)}</li>`).join('')||'<li>✅ 沒有發現問題</li>'}</ul></div>`;
+}
+function exportHTML(){
+  const c=document.documentElement.cloneNode(true);
+  c.querySelector('#app').innerHTML='';
+  c.querySelectorAll('.toast').forEach(t=>t.remove());
+  const b=c.querySelector('body');if(b)b.removeAttribute('style');
+  const d=clone(DATA);d.meta.stamp=new Date().toISOString();
+  c.querySelector('#default-data').textContent='\n'+JSON.stringify(d,null,1).replace(/</g,'\\u003c')+'\n';
+  const v=(d.meta.version||'內容').replace(/[\\/:*?"<>|\s]+/g,'_');
+  download(`一水千田_卡牌示範_${v}.html`,'<!DOCTYPE html>\n'+c.outerHTML,'text/html');
+}
+function exportCSV(){
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['類型','編號','卡名','張數','史料狀態','年代','花費/需求','條件','規則文字','昔','今','史料小故事','出處']];
+  DATA.cards.forEach(c=>rows.push([TYPES[c.type]?TYPES[c.type].label:c.type,c.id,c.name,c.copies,c.status,c.year||'',
+    Object.entries(c.cost||{}).filter(([k,v])=>v>0).map(([k,v])=>resName(k)+v).join(' '),(c.requires||[]).map(reqText).join('、'),
+    c.type==='memory'?'':ruleText(c),c.then||'',c.now||'',c.history||'',c.source||'']));
+  DATA.resources.forEach(r=>rows.push(['資源卡',r.id,r.name,r.copies,r.status,'','','','產自：'+r.tile,'','',r.history,r.source]));
+  download('一水千田_卡牌內容.csv','\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n'),'text/csv');
+}
+function moveCard(d){
+  const c=cardById(ED.sel);if(!c)return;const same=cardsOf(c.type);const i=same.indexOf(c),j=i+d;if(j<0||j>=same.length)return;
+  const a=DATA.cards.indexOf(c),b=DATA.cards.indexOf(same[j]);[DATA.cards[a],DATA.cards[b]]=[DATA.cards[b],DATA.cards[a]];save();render();
+}
+function refreshPreview(){
+  const c=cardById(ED.sel);const pv=$('#edPreview');if(c&&pv)pv.innerHTML=cardHTML(c,{big:1});
+  const it=document.querySelector('.ed .it.sel .nm');if(it&&c)it.textContent=c.name;
+}
+function openEditor(){OVER='editor';MODAL=null;render()}
+
+/* ================= 8. 互動事件 ================= */
+const ACT={
+  goHome(){VIEW='home';G=null;render()},
+  goSite(el,ev){
+    if(ev)ev.preventDefault();
+    if(VIEW==='game'){MODAL={html:'<h3>要離開遊戲回到網站首頁嗎？</h3><p>這一局的進度不會保存。</p><div class="row"><button class="btn" data-act="modalNo">繼續玩</button><button class="btn primary" data-act="goSiteYes">離開</button></div>'};render();return}
+    location.href='index.html';
+  },
+  goSiteYes(){location.href='index.html'},
+  goSetup(){VIEW='setup';G=null;window.scrollTo({top:0});render()},
+  setN(el){SETUP.n=+el.dataset.n;render()},
+  startGame(){startGame();render()},
+  openGallery(){OVER='gallery';render()},
+  openRules(){OVER='rules';render()},
+  closeOver(el,ev){if(ev&&ev.target.closest('[data-stop]')&&!el.matches('button'))return;OVER=null;render()},
+  galTab(el){GAL.tab=el.dataset.t;render();const b=$('.full .fbody');if(b)b.scrollTop=0},
+  zoom(el){const c=cardById(el.dataset.id);if(!c)return;MODAL={html:zoomHTML(c)};render()},
+  closeSplash(){G.splash=null;render()},
+  contrib(el){contribute(el.dataset.res)},
+  contribAll(){contributeAll()},
+  trade(){bankTrade()},
+  give(){giveTo()},
+  buy(el){buy(+el.dataset.i)},
+  endTurn(){endTurn()},
+  askQuit(){MODAL={html:'<h3>要結束這局嗎？</h3><p>會直接進入結算畫面。</p><div class="row"><button class="btn" data-act="modalNo">取消</button><button class="btn primary" data-act="quitYes">結束並結算</button></div>'};render()},
+  quitYes(){MODAL=null;endGame()},
+  modalNo(){MODAL=null;render()},
+  edTab(el){ED.tab=el.dataset.t;ED.sel=null;render()},
+  edSel(el){ED.sel=el.dataset.id;render()},
+  edAdd(){
+    const t=ED.tab;const prefix={role:'R',project:'P',dev:'D',event:'E',memory:'M'}[t];
+    const c={id:newId(prefix),type:t,name:'新卡牌',copies:1,year:'',status:'遊戲化',cost:{},requires:[],effects:[],text:'',history:'',source:'',image:''};
+    if(t==='memory'){c.then='';c.now=''}
+    DATA.cards.push(c);ED.sel=c.id;save();render();
+  },
+  edDup(){const c=cardById(ED.sel);if(!c)return;const d=clone(c);d.id=newId(d.id.replace(/\d+$/,'')||'X');d.name+='（複製）';
+    DATA.cards.splice(DATA.cards.indexOf(c)+1,0,d);ED.sel=d.id;save();render()},
+  edDel(){const c=cardById(ED.sel);if(!c)return;MODAL={html:`<h3>刪除「${esc(c.name)}」？</h3><p>刪除後無法復原（除非你有匯出的 JSON）。</p><div class="row"><button class="btn" data-act="modalNo">取消</button><button class="btn primary danger" data-act="edDelYes">刪除</button></div>`};render()},
+  edDelYes(){DATA.cards=DATA.cards.filter(c=>c.id!==ED.sel);ED.sel=null;MODAL=null;save();render()},
+  edUp(){moveCard(-1)},edDown(){moveCard(1)},
+  effAdd(){const c=cardById(ED.sel);if(!c)return;c.effects.push({t:'gain',target:c.type==='event'?'all':'self',res:DATA.resources[0]?DATA.resources[0].id:'',n:1});save();render()},
+  effDel(el){const c=cardById(ED.sel);c.effects.splice(+el.dataset.i,1);save();render()},
+  effUp(el){const c=cardById(ED.sel);const i=+el.dataset.i;if(i>0){[c.effects[i-1],c.effects[i]]=[c.effects[i],c.effects[i-1]];save();render()}},
+  reqAdd(){const c=cardById(ED.sel);c.requires.push({k:'stat',stat:'旱田',min:1});save();render()},
+  reqDel(el){const c=cardById(ED.sel);c.requires.splice(+el.dataset.i,1);save();render()},
+  edImgClear(){const c=cardById(ED.sel);c.image='';save();render()},
+  resAdd(){let i=1;while(DATA.resources.some(r=>r.id==='res'+i))i++;DATA.resources.push({id:'res'+i,name:'新資源',icon:'📦',tile:'',color:'#888888',copies:10,status:'遊戲化',history:'',source:''});save();render()},
+  resDel(el){const r=DATA.resources[+el.dataset.i];const used=DATA.cards.some(c=>(c.cost||{})[r.id]>0||(c.effects||[]).some(e=>e.res===r.id));
+    MODAL={html:`<h3>刪除資源「${esc(r.name)}」？</h3>${used?'<p style="color:#b42318">有卡牌用到這個資源，刪除後那些卡會出錯（可到「內容檢查」查看）。</p>':''}<div class="row"><button class="btn" data-act="modalNo">取消</button><button class="btn primary danger" data-act="resDelYes" data-i="${el.dataset.i}">刪除</button></div>`};render()},
+  resDelYes(el){DATA.resources.splice(+el.dataset.i,1);MODAL=null;save();render()},
+  exportHTML(){exportHTML()},
+  exportJSON(){download(`一水千田_卡牌內容_${(DATA.meta.version||'').replace(/\s+/g,'_')}.json`,JSON.stringify(DATA,null,1),'application/json')},
+  exportCSV(){exportCSV()},
+  pickJSON(){$('#jsonFile').click()},
+  resetData(){MODAL={html:'<h3>還原成內建內容？</h3><p>這台電腦上的所有修改都會被清除。</p><div class="row"><button class="btn" data-act="modalNo">取消</button><button class="btn primary danger" data-act="resetYes">還原</button></div>'};render()},
+  resetYes(){DATA=clone(EMBED);normalize();ED.sel=null;MODAL=null;save();toast('已還原');render()},
+  useSaved(){DATA=MODAL.saved.data;normalize();MODAL=null;save();render()},
+  useEmbed(){MODAL=null;save();render()}
+};
+document.addEventListener('click',ev=>{
+  const el=ev.target.closest('[data-act]');if(!el)return;
+  if(el.classList.contains('overlay')&&ev.target!==el)return;   // 點對話框內部不關閉
+  const f=ACT[el.dataset.act];if(f)f(el,ev);
+});
+// 按鈕的水波漣漪
+document.addEventListener('pointerdown',ev=>{
+  const b=ev.target.closest('.btn');if(!b||b.disabled)return;
+  const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height)*2.2,d=document.createElement('i');
+  d.className='ripple';d.style.cssText=`width:${s}px;height:${s}px;left:${ev.clientX-r.left-s/2}px;top:${ev.clientY-r.top-s/2}px`;
+  b.appendChild(d);setTimeout(()=>d.remove(),700);
+});
+document.addEventListener('input',ev=>{
+  const t=ev.target;const c=ED.sel&&cardById(ED.sel);
+  if(t.dataset.ui){UI[t.dataset.ui]=t.value;return}
+  if(OVER!=='editor'&&t.dataset.setupName==null)return;
+  if(t.dataset.f&&c){
+    const k=t.dataset.f;
+    if(k==='image'&&t.value==='(已上傳圖片)')return;
+    c[k]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(0,+t.value||0):t.value;save();refreshPreview();return;
+  }
+  if(t.dataset.cost&&c){const v=Math.max(0,+t.value||0);if(v>0)c.cost[t.dataset.cost]=v;else delete c.cost[t.dataset.cost];save();refreshPreview();return}
+  if(t.dataset.eff!=null&&c){
+    const e=c.effects[+t.dataset.eff];const k=t.dataset.ef;if(!e)return;
+    if(k==='t'){const old=e;const n={t:t.value};EFFECTS[t.value].p.forEach(p=>{n[p]=old[p]!=null?old[p]:(p==='target'?(c.type==='event'?'all':'self'):p==='res'?(DATA.resources[0]?DATA.resources[0].id:''):p==='n'?1:'')});c.effects[+t.dataset.eff]=n;save();render();return}
+    e[k]=k==='n'?(+t.value||0):t.value;save();refreshPreview();return;
+  }
+  if(t.dataset.req!=null&&c){
+    const r=c.requires[+t.dataset.req];const k=t.dataset.rf;if(!r)return;
+    if(k==='k'){r.k=t.value;if(r.k==='water'){delete r.stat;delete r.min}else{r.stat=r.stat||'旱田';r.min=r.min||1}save();render();return}
+    r[k]=k==='min'?(+t.value||0):t.value;save();refreshPreview();return;
+  }
+  if(t.dataset.res!=null&&t.dataset.rf){
+    const r=DATA.resources[+t.dataset.res];if(!r)return;r[t.dataset.rf]=t.type==='number'?Math.max(0,+t.value||0):t.value;save();
+    if(t.type==='color'||t.dataset.rf==='status')render();return;
+  }
+  if(t.dataset.set){const k=t.dataset.set;const s=S();s[k]=t.type==='checkbox'?t.checked:t.tagName==='SELECT'?t.value:Math.max(0,+t.value||0);save();return}
+  if(t.dataset.meta){DATA.meta[t.dataset.meta]=t.value;save();return}
+  if(t.dataset.setupName!=null){SETUP.names[+t.dataset.setupName]=t.value;
+    const av=t.closest('.seat')&&t.closest('.seat').querySelector('.av');if(av)av.innerHTML=initial(t.value);return}
+});
+document.addEventListener('change',ev=>{
+  const t=ev.target;
+  if(t.dataset.ui){UI[t.dataset.ui]=t.value;return}
+  if(t.dataset.setupRole!=null){SETUP.roles[+t.dataset.setupRole]=t.value;render();return}
+  if(OVER!=='editor')return;
+  if(t.dataset.f==='status'||t.dataset.f==='copies'||t.dataset.f==='unlockWater'){render();return}
+  if(t.matches('[data-img]')&&t.files[0]){
+    const c=cardById(ED.sel);const fr=new FileReader();
+    fr.onload=()=>{const img=new Image();img.onload=()=>{const m=480,sc=Math.min(1,m/Math.max(img.width,img.height));const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      c.image=cv.toDataURL('image/jpeg',.85);save();render()};img.onerror=()=>toast('⚠ 這個檔案不是圖片');img.src=fr.result};
+    fr.readAsDataURL(t.files[0]);return;
+  }
+  if(t.id==='jsonFile'&&t.files[0]){
+    const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!Array.isArray(d.cards))throw 0;DATA=d;normalize();ED.sel=null;save();toast('已匯入 '+d.cards.length+' 張卡牌');render()}catch(e){toast('⚠ 這不是正確的卡牌 JSON 檔')}};
+    fr.readAsText(t.files[0]);
+  }
+});
+document.addEventListener('keydown',ev=>{
+  // 隱藏入口：Ctrl＋Shift＋D 開關開發者模式
+  if(ev.ctrlKey&&ev.shiftKey&&(ev.key==='D'||ev.key==='d')){ev.preventDefault();if(OVER==='editor'){OVER=null;render()}else openEditor();return}
+  if(ev.key==='Escape'){
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)&&OVER==='editor'&&!MODAL)return;   // 編輯文字時按 Esc 不要整個關掉
+    if(MODAL){MODAL=null;render()}else if(OVER){OVER=null;render()}else if(VIEW==='game'&&G&&G.splash){G.splash=null;render()}
+    return;
+  }
+  // 卡牌可以用鍵盤放大
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('[data-act="zoom"]')){ev.preventDefault();ACT.zoom(ev.target)}
+});
+window.addEventListener('hashchange',()=>{if(location.hash==='#dev')openEditor()});
+
+/* ================= 9. 啟動 ================= */
+const oldDraft=loadData();normalize();
+if(location.hash==='#dev')OVER='editor';
+if(oldDraft){
+  MODAL={saved:oldDraft,html:`<h3>這台電腦有舊的修改草稿</h3><p>這個檔案的內建內容是「${esc(EMBED.meta.version||'')}」，和你上次在這台電腦修改的版本不同（草稿存於 ${esc((oldDraft.saved||'').slice(0,16).replace('T',' '))}）。要用哪一份？</p>
+  <div class="row"><button class="btn" data-act="useEmbed">用這個檔案的內容</button><button class="btn primary" data-act="useSaved">繼續用我的草稿</button></div>`};
+}
+render();
+</script>
+</body>
+</html>

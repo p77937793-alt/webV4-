@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一水千田｜設計方向預覽</title>
+<meta name="robots" content="noindex">
+<!-- 方向預覽樣張：只用來確認色彩、字體與三種區域的氣質，不是正式頁面。文字全部取自網站現有資料檔。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/tokens.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans); font-size: var(--fs-18); line-height: var(--lh-body); letter-spacing: var(--ls-body);
+    background: var(--surface); color: var(--text); }
+  h1, h2, h3, p { margin: 0; }
+  a { color: var(--interactive); text-underline-offset: .2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .grid { display: grid; grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr)); column-gap: var(--grid-gutter);
+    max-width: var(--grid-max); margin: 0 auto; padding: 0 var(--grid-margin); }
+  section { padding: var(--space-section) 0; }
+  .note { font-size: var(--fs-14); color: var(--text-muted); }
+
+  /* ---- 導覽列 ---- */
+  .nav { position: sticky; top: 0; z-index: var(--z-nav); background: var(--surface); border-bottom: var(--rule); }
+  .nav .grid { height: var(--nav-h); align-items: center; }
+  .nav .logo { grid-column: 1 / 4; font-weight: var(--fw-black); font-size: var(--fs-21); letter-spacing: .12em; color: var(--text); text-decoration: none; }
+  .nav ul { grid-column: 4 / -1; display: flex; justify-content: flex-end; gap: var(--space-5); list-style: none; margin: 0; padding: 0; font-size: var(--fs-16); }
+  .nav a { color: var(--text); text-decoration: none; padding: 20px 0; position: relative; }
+  .nav a[aria-current]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 12px; height: 3px; background: var(--canal); }
+
+  /* ---- 規範標頭 ---- */
+  .spec h1 { grid-column: 1 / -1; font-size: var(--fs-48); font-weight: var(--fw-black); line-height: var(--lh-tight); }
+  .spec p { grid-column: 1 / 9; margin-top: var(--space-4); color: var(--text-muted); max-width: var(--measure); }
+  .swatches { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--grid-gutter); margin-top: var(--space-7); }
+  .sw { border-top: 2px solid var(--iron-900); padding-top: var(--space-2); font-size: var(--fs-14); }
+  .sw i { display: block; height: 72px; margin-bottom: var(--space-2); border: 1px solid rgba(35, 40, 42, .12); }
+  .sw b { display: block; }
+  .type { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gutter); margin-top: var(--space-7); border-top: var(--rule-strong); padding-top: var(--space-4); }
+  .type .serif { font-family: var(--font-serif); font-weight: var(--fw-black); font-size: var(--fs-72); line-height: 1; color: var(--laterite); }
+  .type .sans { font-weight: var(--fw-black); font-size: var(--fs-72); line-height: 1; }
+  .type .thin { font-weight: var(--fw-light); font-size: var(--fs-36); }
+
+  /* ---- 展示區 ---- */
+  .exhibit { text-align: center; }
+  .exhibit h2 { grid-column: 1 / -1; font-size: var(--fs-display); font-weight: var(--fw-black); line-height: 1; letter-spacing: var(--ls-display); }
+  .exhibit .lead { grid-column: 3 / 11; margin-top: var(--space-5); font-size: var(--fs-21); font-weight: var(--fw-light); color: var(--text-muted); }
+  .exhibit figure { grid-column: 1 / -1; margin: var(--space-8) auto 0; width: 80%; }
+  .exhibit figure img { width: 100%; display: block; }
+  .exhibit figcaption { margin-top: var(--space-2); font-size: var(--fs-12); color: var(--text-muted); text-align: left; }
+  @supports (animation-timeline: view()) {
+    .exhibit figure { animation: exhibit-grow linear both; animation-timeline: view(); animation-range: entry 0% cover 45%; }
+  }
+  @keyframes exhibit-grow { to { width: 100%; } }
+  .numbers { grid-column: 2 / 12; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: var(--space-8); }
+  .numbers div { padding: 0 var(--space-3); }
+  .numbers b { display: block; font-family: var(--font-serif); font-weight: var(--fw-black); font-size: var(--fs-72); line-height: 1; }
+  .numbers span { font-size: var(--fs-16); color: var(--text-muted); }
+
+  /* ---- 檔案區 ---- */
+  .archive h2 { grid-column: 4 / 11; font-size: var(--fs-36); font-weight: var(--fw-black); margin-bottom: var(--space-7); }
+  .timeline { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; list-style: none; margin: 0; padding: 0; }
+  .timeline li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding-bottom: var(--space-6); }
+  .timeline b { grid-column: 1 / 4; font-family: var(--font-serif); font-weight: var(--fw-black); font-size: var(--fs-48); line-height: 1; color: var(--laterite);
+    border-left: 3px solid var(--canal); padding-left: var(--space-3); }
+  .timeline p { grid-column: 4 / 11; font-family: var(--font-serif); line-height: var(--lh-serif); max-width: var(--measure); padding-top: 6px; }
+  .wall { grid-column: 1 / -1; position: relative; margin-top: var(--space-8); min-height: 560px; background: var(--iron-700) center / cover; display: grid; grid-template-columns: subgrid; align-items: end; }
+  .wall .label { grid-column: 8 / 13; background: var(--concrete-50); padding: var(--space-5); margin-bottom: var(--space-5); }
+  .wall .label .big { font-family: var(--font-serif); font-weight: var(--fw-black); font-size: var(--fs-72); line-height: 1; color: var(--laterite); }
+  .wall .label h3 { font-size: var(--fs-24); margin: var(--space-3) 0 var(--space-2); }
+  .wall .label p { font-family: var(--font-serif); line-height: var(--lh-serif); }
+  .wall .credit { position: absolute; left: var(--space-3); bottom: var(--space-2); font-size: var(--fs-12); color: var(--concrete-50); }
+
+  /* ---- 舞台區 ---- */
+  .stage h2 { grid-column: 1 / 9; font-size: var(--fs-48); font-weight: var(--fw-black); line-height: var(--lh-tight); }
+  .stage .mapwrap { grid-column: 1 / -1; position: relative; margin-top: var(--space-6); }
+  .stage .frame { aspect-ratio: 16 / 8; background: url(../images/map-full.jpg) center / cover; position: relative; }
+  .stage .pin { position: absolute; width: 28px; height: 28px; border-radius: var(--radius-pin); background: var(--brass); color: var(--pond-900);
+    display: grid; place-items: center; font-weight: var(--fw-black); font-size: var(--fs-14); transform: translate(-50%, -50%); }
+  .stage .panel { position: absolute; right: var(--space-4); top: var(--space-4); width: min(320px, 70%); background: var(--pond-800); padding: var(--space-4);
+    box-shadow: var(--elevation); border-top: 3px solid var(--brass); }
+  .stage .panel h3 { font-size: var(--fs-21); margin-bottom: var(--space-2); }
+  .stage .panel p { font-size: var(--fs-16); color: var(--text-muted); }
+  .stage .foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); }
+  .stage .foot p { max-width: var(--measure); color: var(--text-muted); }
+  .btn { display: inline-block; padding: 14px 28px; border-radius: var(--radius-control); background: var(--accent); color: var(--pond-900);
+    font-weight: var(--fw-bold); text-decoration: none; transition: filter var(--dur-fast) var(--ease-out); }
+  .btn:hover { filter: brightness(.9); text-decoration: none; }
+
+  @media (max-width: 960px) {
+    .nav ul { display: none; }
+    .nav .logo { grid-column: 1 / -1; }
+    .spec p, .exhibit .lead, .archive h2, .stage h2 { grid-column: 1 / -1; }
+    .timeline b { grid-column: 1 / -1; font-size: var(--fs-36); }
+    .timeline p { grid-column: 1 / -1; padding: var(--space-2) 0 0 calc(var(--space-3) + 3px); }
+    .wall { display: block; min-height: 0; background: none; }
+    .wall::before { content: ""; display: block; aspect-ratio: 4 / 3; background: inherit; background-image: var(--img); background-size: cover; }
+    .wall .label { margin: 0; }
+    .wall .credit { position: static; display: block; padding: var(--space-2) 0; color: var(--text-muted); }
+    .numbers { grid-column: 1 / -1; }
+    .type { grid-template-columns: 1fr; }
+    .stage .panel { position: static; width: auto; margin-top: var(--space-3); }
+    .stage .frame { aspect-ratio: 4 / 3; }
+  }
+  @media (prefers-reduced-motion: reduce) { .exhibit figure { animation: none; width: 100%; } }
+</style>
+</head>
+<body>
+
+<header class="nav" data-zone="archive">
+  <div class="grid">
+    <a class="logo" href="#">一水千田</a>
+    <ul>
+      <li><a href="#">首頁</a></li>
+      <li><a href="#" aria-current="page">大圳故事</a></li>
+      <li><a href="#">互動地圖</a></li>
+      <li><a href="#">桌遊介紹</a></li>
+      <li><a href="#">認識大圳歷史小遊戲</a></li>
+    </ul>
+  </div>
+</header>
+
+<!-- 規範：色票與字體 -->
+<section class="spec" data-zone="archive">
+  <div class="grid">
+    <h1>設計方向預覽</h1>
+    <p>色彩取自桃園台地的材質：圳道混凝土、閘門鑄鐵、紅土、埤塘夜水、閘門黃銅、圳水與秧苗。下方三個區塊是三種區域的樣張，文字全部取自網站現有的資料檔。</p>
+    <div class="swatches">
+      <div class="sw"><i style="background:var(--concrete-50)"></i><b>混凝土 50</b>#EEEDEA</div>
+      <div class="sw"><i style="background:var(--concrete-300)"></i><b>混凝土 300</b>#C9C6BF</div>
+      <div class="sw"><i style="background:var(--iron-900)"></i><b>鑄鐵 900</b>#23282A</div>
+      <div class="sw"><i style="background:var(--pond-900)"></i><b>埤塘 900</b>#0F2627</div>
+      <div class="sw"><i style="background:var(--laterite)"></i><b>紅土</b>#A3441D</div>
+      <div class="sw"><i style="background:var(--brass)"></i><b>黃銅</b>#C29A45</div>
+      <div class="sw"><i style="background:var(--canal)"></i><b>圳水</b>#2B6F96</div>
+      <div class="sw"><i style="background:var(--paddy)"></i><b>秧苗</b>#4F6B2A</div>
+    </div>
+    <div class="type">
+      <div><div class="serif">1924.5.26</div><p class="note">思源宋體 900：歷史年份與大數字</p></div>
+      <div><div class="sans">一水千田</div><div class="thin">跟著一滴水，從大漢溪走進桃園台地的千塘之鄉。</div><p class="note">思源黑體 900 與 300：介面與產品</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 產品展示區（Apple） -->
+<section class="exhibit" data-zone="exhibit">
+  <div class="grid">
+    <h2>桌遊《一水千田》</h2>
+    <p class="lead">半合作策略桌遊：大家一起蓋好桃園大圳，再各自經營自己的田。</p>
+    <figure>
+      <img src="../images/boardgame-concept.png" alt="桌遊構想圖：19 片六角板塊的版圖，以及公共發展卡、歷史事件卡、人物角色卡">
+      <figcaption>構想圖：版圖配置與卡牌數值以定案為準。</figcaption>
+    </figure>
+    <div class="numbers">
+      <div><b>19</b><span>片六角板塊</span></div>
+      <div><b>81</b><span>張卡牌</span></div>
+      <div><b>5</b><span>種卡</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 歷史檔案區（NTCAM） -->
+<section class="archive" data-zone="archive">
+  <div class="grid">
+    <h2>桃園大圳大事記</h2>
+    <ol class="timeline">
+      <li><b>1916</b><p>臺灣總督府為增加糧食生產，桃園大圳官設工程開工。</p></li>
+      <li><b>1919</b><p>成立公共埤圳桃園大圳組合，負責貯水池與給水路等工程。</p></li>
+      <li><b>1924</b><p>5 月 26 日，導水路及主要幹支分線通水。</p></li>
+    </ol>
+    <div class="wall" style="--img:url(../images/story/p4-shimen.jpg); background-image:url(../images/story/p4-shimen.jpg)">
+      <div class="label">
+        <div class="big">1916</div>
+        <h3>石門取水口開工</h3>
+        <p>從大漢溪上游石門取水，利用台地向西北傾斜的地勢，讓水靠重力流上台地。</p>
+      </div>
+      <small class="credit">照片：出處待補</small>
+    </div>
+  </div>
+</section>
+
+<!-- 探索舞台區（Rockstar） -->
+<section class="stage" data-zone="stage">
+  <div class="grid">
+    <h2>從地圖看千塘之鄉</h2>
+    <div class="mapwrap">
+    <div class="frame" role="img" aria-label="桃園農田水利會灌溉區域圖">
+      <span class="pin" style="left:71.8%;top:97.8%">1</span>
+      <span class="pin" style="left:79.9%;top:52.7%">3</span>
+      <span class="pin" style="left:82.4%;top:44.9%">4</span>
+    </div>
+      <div class="panel">
+        <h3>1. 石門取水口</h3>
+        <p>1916 年開工。從大漢溪上游石門取水，利用台地向西北傾斜的地勢，讓水靠重力流上台地。</p>
+      </div>
+    </div>
+    <div class="foot">
+      <p>水從右下方的石門取水口進來，沿著紅色的水圳一路往西北分出支線，再流進一口口藍色的埤塘，最後送到田裡。</p>
+      <a class="btn" href="#">在新頁面打開互動地圖（手機建議用這個）</a>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

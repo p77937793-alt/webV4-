@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一水千田｜一滴水的旅程</title>
+  <meta name="description" content="《一水千田》：用桌遊、互動地圖和小遊戲，認識桃園大圳與千塘之鄉的水文化。">
+  <meta name="theme-color" content="#EEEDEA">
+  <link rel="icon" href="images/drop.svg" type="image/svg+xml">
+  <!-- 字體：思源黑體（介面、產品）＋思源宋體（歷史敘事）。展場沒有網路時會自動改用系統字型 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-story">
+  <!-- ★ 這一頁的文字不寫在這裡：要修改內容，請改 data/story.js -->
+  <header id="site-nav" class="nav"></header>
+  <main id="app"></main>
+  <noscript><p class="noscript">這個網站需要開啟 JavaScript 才能顯示內容。</p></noscript>
+
+  <script src="data/site.js"></script>
+  <script src="data/story.js"></script>
+  <!-- 後台草稿預覽：一定要放在資料檔之後、render.js 之前 -->
+  <script src="js/cms.js"></script>
+  <script src="js/render.js"></script>
+</body>
+</html>

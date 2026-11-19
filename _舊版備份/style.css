@@ -1,0 +1,260 @@
+/* ===== 1. 全站的顏色與字型 ===== */
+body {
+    margin: 0;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: #f4efe4; /* 米色底 */
+    color: #2d2a26; /* 深灰字 */
+    line-height: 1.7;
+}
+
+/* ===== 2. 上方選單 ===== */
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: #ffffff;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #2b7bb9;
+  text-decoration: none;
+}
+.logo img { width: 28px; }
+.nav nav a {
+  margin-left: 16px;
+  color: #2d2a26;
+  text-decoration: none;
+}
+.nav nav a:hover { color: #2b7bb9; }
+
+/* ===== 3. 大標題區 ===== */
+.hero {
+    text-align: center;
+    padding: 80px 20px;
+    background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)), /* 半透明黑色，讓白字看得清楚 */
+    url("images/P3110446.jpg") center / cover no-repeat; /* 照片置中、填滿整區 */
+    color: white;
+}
+.hero h1 { font-size: 56px; margin: 0; letter-spacing: 8px; }
+.btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 32px;
+  background: white;
+  color: #2b7bb9;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* ===== 4. 三個重點數字 ===== */
+.facts {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 30px 20px;
+}
+.fact {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 30px;
+  text-align: center;
+}
+.fact b { display: block; font-size: 36px; color: #b5532d; }
+
+/* ===== 5. 文字內容 ===== */
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ===== 6. 翻面卡牌 ===== */
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+.card {
+  width: 200px;
+  height: 280px;
+  border-radius: 12px;
+  background: white;
+  border: 3px solid #2b6cb0;
+  padding: 16px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.card .back { display: none; }               /* 一開始看不到背面 */
+.card.flipped .front { display: none; }      /* 翻面後：藏起正面 */
+.card.flipped .back { display: block; }      /* 翻面後：顯示背面 */
+.card.flipped { background: #f1e8d6; }
+
+/* ===== 7. 頁尾 ===== */
+footer {
+  text-align: center;
+  padding: 30px;
+  color: #7a7166;
+  font-size: 14px;
+}
+
+/* ===== 8. 手機版：螢幕寬度小於 600px 時 ===== */
+@media (max-width: 600px) {
+  .hero h1 { font-size: 40px; }
+  .facts { flex-direction: column; align-items: center; }
+  .nav { flex-direction: column; gap: 6px; }
+}
+
+
+/* ===== 9. 動畫：平滑捲動 ===== */
+html { scroll-behavior: smooth; }
+
+/* ===== 10. 大標題：進場動畫＋往下的箭頭 ===== */
+.hero { position: relative; min-height: 70vh; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; box-sizing: border-box; }
+.hero h1, .hero p, .hero .btn { animation: rise 1s ease-out both; }
+.hero p { animation-delay: .25s; }
+.hero .btn { animation-delay: .5s; margin: 20px 6px 0; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: none; }
+}
+.arrow {
+  position: absolute;
+  bottom: 20px;
+  font-size: 34px;
+  color: white;
+  text-decoration: none;
+  animation: bounce 1.6s infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(12px); }
+}
+
+/* ===== 11. 滑到才淡入（animate.js 會自動加上 reveal） ===== */
+.reveal { opacity: 0; transform: translateY(40px); transition: opacity .7s, transform .7s; }
+.reveal.show { opacity: 1; transform: none; }
+
+/* ===== 12. 新增內容：時間軸、地圖、按鈕 ===== */
+.timeline { list-style: none; padding: 0; border-left: 3px solid #2b7bb9; margin-left: 10px; }
+.timeline li { position: relative; padding: 0 0 18px 24px; }
+.timeline li::before { content: ""; position: absolute; left: -9px; top: 6px; width: 15px; height: 15px;
+                       border-radius: 50%; background: #2b7bb9; }
+.timeline b { display: block; font-size: 22px; color: #b5532d; }
+.map { margin: 0; }
+.map img { width: 100%; border-radius: 12px; display: block; }
+.map figcaption { font-size: 13px; color: #7a7166; margin-top: 6px; }
+.story-link { text-align: center; }
+.btn-blue { background: #2b7bb9; color: white; }
+
+/* ===== 13. 減少動態效果：系統有設定時關掉動畫 ===== */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero h1, .hero p, .hero .btn, .arrow { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ===== 14. 互動地圖 ===== */
+/* ★ 可以自己調整的數字 */
+.map-frame {
+  --map-width: 100%;      /* 地圖寬度：100% = 和文字一樣寬；也可以寫 1100px 或 95vw，會比文字欄更寬 */
+  --map-height: 620px;    /* 地圖高度（電腦） */
+  --gap-above: 16px;      /* 地圖和上面標題的距離 */
+  --gap-below: 8px;       /* 地圖和下面文字的距離 */
+  width: var(--map-width);
+  max-width: 96vw;
+  margin: var(--gap-above) 0 var(--gap-below);
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);   /* 讓變寬的地圖保持置中 */
+}
+.map-frame iframe { width: 100%; height: var(--map-height); border: 0; border-radius: 12px; display: block; background: #e9dcc6; }
+.map-more { text-align: right; font-size: 14px; }
+.map-more a { color: #2b7bb9; }
+@media (max-width: 600px) { .map-frame { --map-height: 75vh; } }
+
+/* ===== 15. 選單：目前所在的頁面、手機版改成可以左右滑的一排 ===== */
+.nav nav a[aria-current="page"] { color: #2b7bb9; font-weight: bold; border-bottom: 2px solid #2b7bb9; }
+@media (max-width: 900px) {
+  .nav { flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px; }
+  .logo { font-size: 19px; }
+  .nav nav { display: flex; gap: 16px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+  .nav nav a { margin-left: 0; font-size: 14px; }
+}
+
+/* ===== 16. 小細節：鍵盤操作的外框、按鈕回饋、圖片不超出畫面 ===== */
+a:focus-visible, button:focus-visible, .card:focus-visible { outline: 3px solid #ffb703; outline-offset: 3px; border-radius: 6px; }
+.btn { transition: transform .15s, box-shadow .15s; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+img { max-width: 100%; }
+.cards-cta { text-align: center; margin-top: 28px; }
+.fact { box-shadow: 0 2px 8px rgba(45,42,38,.06); }
+
+/* ===== 17. 3D 模型（TresJS） ===== */
+.tres-section {
+  --tres-height: 560px;          /* ★ 3D 模型的高度（電腦） */
+  max-width: 1100px;
+  margin: 10px auto 0;
+  padding: 20px;
+  text-align: center;
+}
+.tres-section[hidden] { display: none; }
+.tres-section h2 { margin: 0 0 12px; }
+.tres-stage {
+  position: relative;
+  height: var(--tres-height);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e6f0f4;           /* 和 3D 畫面的底色一樣 */
+  cursor: grab;
+  touch-action: pan-y;           /* 手機：左右拖是旋轉，上下還是可以捲動頁面 */
+  user-select: none;
+}
+.tres-stage.dragging { cursor: grabbing; }
+#tresApp { position: absolute; inset: 0; }
+.tres-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #7a7166; font-size: 14px; }
+.tres-ui { position: absolute; z-index: 2; opacity: 0; transition: opacity .4s; }
+.tres-stage.ready .tres-ui { opacity: 1; }
+.tres-year {
+  left: 14px; top: 14px; padding: 6px 16px; border-radius: 999px;
+  background: #2b7bb9; color: white; font-weight: bold; font-size: 18px; letter-spacing: 1px;
+}
+.tres-controls { right: 12px; top: 12px; display: flex; gap: 6px; }
+.tres-controls button {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid #c9d6dd; background: rgba(255,255,255,.95);
+  font-size: 17px; color: #2d2a26; cursor: pointer;
+}
+.tres-controls button:hover { border-color: #2b7bb9; color: #2b7bb9; }
+.tres-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(43,123,185,.15); z-index: 2; }
+.tres-progress i { display: block; height: 100%; width: 0; background: #2b7bb9; }
+.tres-caption { font-size: 17px; font-weight: bold; color: #2b7bb9; margin: 12px 0 6px; min-height: 1.7em; }
+.tres-legend { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 13px; color: #5b5348; }
+.tres-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.tres-note { font-size: 13px; color: #7a7166; margin: 0 auto; max-width: 760px; }
+@media (max-width: 600px) {
+  .tres-section { --tres-height: 380px; padding: 16px 12px; }
+  .tres-caption { font-size: 15px; }
+  .tres-year { font-size: 15px; padding: 4px 12px; }
+  .tres-controls button { width: 34px; height: 34px; font-size: 15px; }
+}
+
+/* ===== 18. 桌遊介紹頁 ===== */
+.game-intro { text-align: center; padding-top: 36px; }
+.game-intro h1 { font-size: 44px; margin: 0 0 6px; letter-spacing: 4px; color: #2b7bb9; }
+.game-lead { font-size: 19px; margin: 0 0 18px; }
+.game-figure { margin: 0; }
+.game-figure img { width: 100%; border-radius: 16px; display: block; }
+.game-figure figcaption, .game-note { font-size: 13px; color: #7a7166; margin-top: 6px; }
+@media (max-width: 600px) { .game-intro h1 { font-size: 32px; } .game-lead { font-size: 16px; } }
+
+/* ===== 19. 卡牌的「延伸閱讀」連結 ===== */
+.qr-note { font-size: 15px; color: #7a7166; margin-top: -6px; }
+.card .more { display: inline-block; margin-top: 10px; color: #2b7bb9; font-weight: bold; text-decoration: none; }
+.card .more:hover { text-decoration: underline; }

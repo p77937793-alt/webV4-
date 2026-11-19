@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#0F2627">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一水千田｜互動灌溉地圖</title>
+<link rel="icon" href="images/drop.svg" type="image/svg+xml">
+<!-- 字體與設計變數（DESIGN_SYSTEM.md）。展場沒有網路時會自動改用系統字型 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  /* ============================================================
+     ★ 可以自己調整的數字（改完存檔，瀏覽器按 F5）
+     ============================================================ */
+  :root {
+    --panel-width: 360px;        /* 右邊文字欄的寬度（電腦） */
+    --panel-height: 42%;         /* 下方文字欄的高度（手機） */
+    --panel-padding: 20px 22px;  /* 文字離欄位邊框的距離：上下 左右 */
+    --text-size: 15px;           /* 說明文字大小 */
+    --title-size: 24px;          /* 標題大小 */
+    --line-gap: 1.75;            /* 行距 */
+    --para-gap: 8px;             /* 段落之間的距離 */
+  }
+  /* ============================================================
+     v4：遊戲世界地圖式的 HUD（探索舞台區）
+     底圖是歷史圖資，不調色；只換外框、控制鈕與資訊欄
+     ============================================================ */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: var(--font-sans); letter-spacing: var(--ls-body); color: var(--text); background: var(--surface); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .app { display: flex; height: 100%; }
+  .stage { position: relative; flex: 1; overflow: hidden; touch-action: none; cursor: grab; background: var(--pond-800); }
+  .stage.dragging { cursor: grabbing; }
+  svg { width: 100%; height: 100%; display: block; user-select: none; }
+
+  /* ---- 圖層樣式 ---- */
+  .rg { fill: rgba(255,255,255,0); stroke: rgba(255,255,255,.85); stroke-dasharray: 14 10; stroke-width: 3; cursor: pointer; transition: fill var(--dur-fast); }
+  .rg:hover { fill: rgba(111,179,214,.24); }
+  .hide-regions .rg { stroke: none; }
+  .flow { fill: none; stroke: var(--canal-light); stroke-linecap: round; stroke-dasharray: 24 36; animation: flow 1.6s linear infinite; pointer-events: none; }
+  @keyframes flow { to { stroke-dashoffset: -60; } }
+  .hide-flow .flow { display: none; }
+  .pond { fill: rgba(194,154,69,0); stroke: var(--brass); stroke-width: 3; cursor: pointer; }
+  .pond:hover, .pond.on { fill: rgba(194,154,69,.55); }
+  .hide-ponds .pond { display: none; }
+  .hide-pois .poi { display: none; }
+  .poi { cursor: pointer; }
+  .poi circle { fill: var(--pond-900); stroke: var(--brass); stroke-width: 4; }
+  .poi text { fill: var(--brass); font-weight: 900; font-size: 20px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .poi .lb { fill: var(--concrete-50); font-size: 18px; text-anchor: start; paint-order: stroke; stroke: var(--pond-900); stroke-width: 6px; font-weight: 700; }
+  .poi:hover circle, .poi.on circle { fill: var(--brass); }
+  .poi:hover text:not(.lb), .poi.on text:not(.lb) { fill: var(--pond-900); }
+  #dim { fill: rgba(15,38,39,.62); opacity: 0; pointer-events: none; transition: opacity var(--dur-base) var(--ease-out); }
+  .selected #dim { opacity: 1; }
+  /* 選取的灌區浮起來（不回彈） */
+  #lift { transition: transform var(--dur-base) var(--ease-out); pointer-events: none; }
+  #liftEdge { fill: none; stroke: var(--brass); stroke-width: 5; }
+  .branch { fill: var(--concrete-50); stroke: var(--canal); stroke-width: 1.5; }
+
+  /* ---- HUD：控制鈕 ---- */
+  .tools { position: absolute; left: 12px; top: 12px; display: flex; flex-direction: column; gap: 1px; z-index: 5; background: rgba(238,237,234,.16); }
+  .tools button { width: 44px; height: 44px; border: 0; border-radius: 0; background: var(--pond-900); color: var(--concrete-50);
+    font: inherit; font-size: 18px; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+  .tools button:hover { background: var(--brass); color: var(--pond-900); }
+  /* 圖層開關：像遊戲地圖的篩選列 */
+  .layers { position: absolute; left: 68px; top: 12px; z-index: 5; display: flex; flex-wrap: wrap; gap: 1px; max-width: calc(100% - 84px);
+    background: rgba(238,237,234,.16); font-size: var(--fs-14); }
+  .layers label { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; white-space: nowrap; cursor: pointer;
+    background: var(--pond-900); color: var(--concrete-300); transition: color var(--dur-fast), background var(--dur-fast); }
+  .layers label:hover { color: var(--concrete-50); }
+  .layers input { appearance: none; -webkit-appearance: none; margin: 0; width: 14px; height: 14px; border: 2px solid var(--concrete-300); flex: none; cursor: pointer; }
+  .layers input:checked { background: var(--brass); border-color: var(--brass); }
+  .layers label:has(input:checked) { color: var(--concrete-50); box-shadow: inset 0 -3px 0 var(--brass); }
+  .layers input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  /* 返回首頁（左下角） */
+  .home { position: absolute; left: 12px; bottom: 12px; z-index: 6; display: flex; align-items: center; min-height: 44px; padding: 0 18px;
+    background: var(--brass); color: var(--pond-900); text-decoration: none; font-weight: 700; font-size: var(--fs-14); border-radius: var(--radius-control); }
+  .home:hover { filter: brightness(1.12); }
+  .embedded .home { display: none; }   /* 地圖放在首頁裡面時，不需要這個按鈕 */
+  .hint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 5; pointer-events: none;
+    padding: 10px 16px; background: var(--pond-900); color: var(--concrete-50); border-left: 3px solid var(--brass);
+    font-size: var(--fs-14); white-space: nowrap; transition: opacity .5s; }
+
+  /* ---- 資訊欄 ---- */
+  .panel { width: var(--panel-width); flex: none; background: var(--pond-900); color: var(--concrete-50); overflow-y: auto; padding: var(--panel-padding);
+    border-left: 1px solid rgba(238,237,234,.16); }
+  .panel h1, .panel h2 { margin: 0 0 8px; font-size: var(--title-size); font-weight: 900; line-height: 1.3; color: var(--concrete-50); }
+  .panel h2.branch-title { padding-left: 12px; border-left: 6px solid var(--bc, var(--brass)); }
+  .panel h3 { margin: 22px 0 8px; padding-top: 12px; border-top: 1px solid rgba(238,237,234,.16); font-size: var(--fs-14); font-weight: 700; color: var(--concrete-300); }
+  .panel p { margin: var(--para-gap) 0; line-height: var(--line-gap); font-size: var(--text-size); }
+  .panel p.muted { font-size: 13px; color: var(--concrete-300); }
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin: 14px 0; background: rgba(238,237,234,.16); }
+  .stat { background: var(--pond-800); padding: 10px 6px; text-align: center; }
+  .stat b { display: block; font-family: var(--font-serif); font-size: 26px; line-height: 1.2; color: var(--brass); }
+  .stat span { font-size: 12px; line-height: 1.5; color: var(--concrete-300); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid rgba(238,237,234,.24); background: transparent; color: var(--concrete-50); border-radius: var(--radius-control);
+    padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast); }
+  .chip:hover { border-color: var(--brass); color: var(--brass); }
+  .bar { display: flex; height: 10px; overflow: hidden; background: var(--pond-800); margin: 8px 0; }
+  .bar i { display: block; }
+  .uses { margin: 4px 0; padding-left: 18px; font-size: calc(var(--text-size) - 1px); line-height: var(--line-gap); }
+  .uses li::marker { color: var(--brass); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: var(--radius-control); color: var(--pond-900);
+    background: var(--concrete-300); margin-left: 8px; vertical-align: middle; letter-spacing: .04em; }
+  .tag.ok { background: var(--paddy-light); } .tag.wait { background: var(--brass); }
+  .back { margin-top: 14px; min-height: 44px; border: 0; background: var(--brass); color: var(--pond-900); padding: 0 18px; border-radius: var(--radius-control);
+    font: inherit; font-weight: 700; cursor: pointer; }
+  .back:hover { filter: brightness(1.12); }
+  .note { font-size: 12px; color: var(--concrete-300); line-height: 1.7; margin-top: 22px; border-top: 1px solid rgba(238,237,234,.16); padding-top: 12px; }
+  .panel a { color: var(--canal-light); }
+
+  /* 文字欄和地圖中間的分隔線：可以拖曳 */
+  .divider { flex: none; width: 10px; background: var(--pond-800); cursor: col-resize; position: relative; touch-action: none; }
+  .divider::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 2px; height: 44px; background: var(--concrete-300); }
+  .divider:hover, .divider.on { background: var(--brass); }
+  .divider:hover::after, .divider.on::after { background: var(--pond-900); }
+
+  @media (max-width: 760px) {
+    .app { flex-direction: column; }
+    .panel { width: 100%; height: var(--panel-height); border-left: 0; border-top: 1px solid rgba(238,237,234,.16); }
+    .divider { width: 100%; height: 14px; cursor: row-resize; }
+    .divider::after { width: 44px; height: 2px; }
+    .layers { left: 64px; }
+    .layers label { min-height: 40px; padding: 0 10px; font-size: 12px; }
+    .tools button { width: 44px; height: 40px; }
+    .hint { bottom: 64px; white-space: normal; text-align: center; width: max-content; max-width: 86%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .flow { animation: none; } #lift, #dim { transition: none; } }
+</style>
+</head>
+<body data-zone="stage">
+<div class="app">
+  <div class="stage" id="stage">
+    <svg id="map" viewBox="0 0 4796 3471" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <clipPath id="clipSel"><path id="clipPath" d=""/></clipPath>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="10" dy="22" stdDeviation="14" flood-color="#000" flood-opacity=".55"/>
+        </filter>
+      </defs>
+      <image id="base" href="images/ex-hero.jpg" x="0" y="0" width="4796" height="3471"/>
+      <g id="regions"></g>
+      <g id="flows"></g>
+      <rect id="dim" x="-5000" y="-5000" width="15000" height="15000"/>
+      <g id="lift">
+        <g filter="url(#shadow)">
+          <image id="liftImg" href="images/ex-hero.jpg" x="0" y="0" width="4796" height="3471" clip-path="url(#clipSel)"/>
+        </g>
+        <path id="liftEdge" d=""/>
+        <g id="liftBranch"></g>
+      </g>
+      <g id="ponds"></g>
+      <g id="pois"></g>
+    </svg>
+    <div class="tools">
+      <button id="zin" title="放大">＋</button>
+      <button id="zout" title="縮小">－</button>
+      <button id="zfit" title="看全圖">⤢</button>
+      <button id="zfull" title="全螢幕">⛶</button>
+    </div>
+    <div class="layers">
+      <label><input type="checkbox" data-layer="regions" checked> 支線灌區</label>
+      <label><input type="checkbox" data-layer="flow" checked> 水流動畫</label>
+      <label><input type="checkbox" data-layer="ponds"> 埤塘</label>
+      <label><input type="checkbox" data-layer="pois" checked> 地點</label>
+    </div>
+    <a class="home" href="index.html" target="_top">← 返回首頁</a>
+    <div class="hint" id="hint">拖曳移動・滾輪或雙指縮放・點一塊灌區看詳細資料</div>
+  </div>
+  <div class="divider" id="divider" title="拖曳調整文字欄寬度（點兩下恢復預設）"></div>
+  <aside class="panel" id="panel"></aside>
+</div>
+
+<!-- 地圖資料：形狀（不用改）和文字（要改文字就改 data/map.js） -->
+<script src="data/map-geo.js"></script>
+<script src="data/map.js"></script>
+<!-- 後台草稿預覽：一定要放在 data/map.js 之後 -->
+<script src="js/cms.js"></script>
+<script>
+
+/* =========================================================
+   2. 畫出圖層
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('map');
+const stage = document.getElementById('stage');
+const panel = document.getElementById('panel');
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const COLORS = { 'L1':'#e76f51','L2':'#2a9d8f','L3':'#e9c46a','L4':'#f4a261','L5':'#8ab17d','L6':'#6d597a','L7':'#457b9d','L8-1':'#e5989b','L8':'#b56576','L9':'#52b788','L10':'#9c6644','L11':'#4361ee','L12-1':'#ff9f1c','GF':'#43aa8b','DX':'#7b2cbf' };
+
+const gReg = document.getElementById('regions');
+for (const id in MAP.regions) {
+  if (!MAP.regions[id] || !BRANCH[id]) continue;
+  const p = el('path', { d: MAP.regions[id], class: 'rg', 'data-id': id }, gReg);
+  p.addEventListener('click', e => { if (!moved) selectBranch(id); });
+}
+const gFlow = document.getElementById('flows');
+for (const k of ['t1','t2','t3']) el('path', { d: MAP.trunk[k], class: 'flow', 'stroke-width': 9 }, gFlow);
+
+const gPond = document.getElementById('ponds');
+MAP.ponds.forEach(([x, y, r, reg], i) => {
+  const c = el('circle', { cx: x, cy: y, r: Math.max(r + 6, 10), class: 'pond' }, gPond);
+  c.addEventListener('click', e => { e.stopPropagation(); if (!moved) selectPond(i, c); });
+});
+
+const gPoi = document.getElementById('pois');
+POI.forEach(p => {
+  const g = el('g', { class: 'poi', 'data-x': p.x, 'data-y': p.y }, gPoi);
+  el('circle', { r: 16 }, g);
+  el('text', {}, g).textContent = p.id;
+  el('text', { class: 'lb', x: 24 }, g).textContent = p.name;
+  g.addEventListener('click', e => { e.stopPropagation(); if (!moved) selectPoi(p, g); });
+  p.g = g;
+});
+
+/* =========================================================
+   3. 拖曳與縮放（改的是 SVG 的 viewBox）
+   ========================================================= */
+const FULL = { x: 0, y: 0, w: 4796, h: 3471 };
+let vb = { ...FULL };
+let hiRes = false;
+/* 地圖區塊目前的大小（還沒顯示出來時寬高是 0，例如放在首頁、還沒捲到） */
+function screenScale() {
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  return Math.max(vb.w / r.width, vb.h / r.height);   // 1 個螢幕像素 = 幾個地圖單位
+}
+function apply() {
+  if (![vb.x, vb.y, vb.w, vb.h].every(Number.isFinite)) vb = { ...FULL };   // 防呆：數字壞掉就回到全圖
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  const k = screenScale();
+  if (k === null) return;                                      // 還看不到地圖時，先不調整標籤大小
+  gPoi.querySelectorAll('.poi').forEach(g => g.setAttribute('transform', `translate(${g.dataset.x},${g.dataset.y}) scale(${k})`));
+  gFlow.querySelectorAll('.flow').forEach(f => f.setAttribute('stroke-width', Math.max(3, 4 * k)));
+  if (!hiRes && vb.w < 2600) loadHiRes();          // 放大到一定程度才載入高解析地圖
+}
+function loadHiRes() {
+  hiRes = true;
+  const img = new Image();
+  img.onload = () => { document.getElementById('base').setAttribute('href', img.src); document.getElementById('liftImg').setAttribute('href', img.src); };
+  img.src = 'images/map-full.jpg';
+}
+function toMap(cx, cy) {   // 螢幕座標 → 地圖座標
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function zoomAt(cx, cy, f) {
+  const p = toMap(cx, cy);
+  const nw = Math.min(FULL.w * 1.2, Math.max(260, vb.w / f)); const s = nw / vb.w;
+  vb = { x: p.x - (p.x - vb.x) * s, y: p.y - (p.y - vb.y) * s, w: nw, h: vb.h * s };
+  apply();
+}
+let anim = null;
+function flyTo(t, ms = 600) {   // 平滑移動到目標範圍
+  cancelAnimationFrame(anim);
+  const from = { ...vb }, t0 = performance.now();
+  const step = now => {
+    const u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 3);
+    for (const k of ['x','y','w','h']) vb[k] = from[k] + (t[k] - from[k]) * e;
+    apply(); if (u < 1) anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
+}
+function fitBox(b, pad = 0.15) {
+  const w = b[2] - b[0], h = b[3] - b[1];
+  const rect = stage.getBoundingClientRect();
+  const ar = rect.width && rect.height ? rect.width / rect.height : FULL.w / FULL.h;
+  let W = w * (1 + pad * 2), Hh = h * (1 + pad * 2);
+  if (W / Hh < ar) W = Hh * ar; else Hh = W / ar;
+  return { x: b[0] + w / 2 - W / 2, y: b[1] + h / 2 - Hh / 2, w: W, h: Hh };
+}
+
+const pointers = new Map(); let last = null, pinch0 = null, moved = false;
+stage.addEventListener('pointerdown', e => { pointers.set(e.pointerId, e); moved = false; last = { x: e.clientX, y: e.clientY }; if (pointers.size === 2) pinch0 = pinchInfo(); hideHint(); });
+stage.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, e);
+  if (pointers.size === 2) {
+    const p = pinchInfo(); if (pinch0) { zoomAt(p.cx, p.cy, p.d / pinch0.d); pinch0 = p; moved = true; } return;
+  }
+  const dx = e.clientX - last.x, dy = e.clientY - last.y;
+  if (!moved && Math.abs(dx) + Math.abs(dy) > 3) { moved = true; stage.classList.add('dragging'); try { stage.setPointerCapture(e.pointerId); } catch (_) {} }
+  if (moved) {
+    const k = screenScale(); if (k === null) return;
+    vb.x -= dx * k; vb.y -= dy * k; apply();
+  }
+  last = { x: e.clientX, y: e.clientY };
+});
+const up = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch0 = null; stage.classList.remove('dragging'); if (pointers.size === 1) { const o = [...pointers.values()][0]; last = { x: o.clientX, y: o.clientY }; } };
+stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+function pinchInfo() { const [a, b] = [...pointers.values()]; return { cx: (a.clientX + b.clientX) / 2, cy: (a.clientY + b.clientY) / 2, d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) }; }
+stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.2 : 1 / 1.2); hideHint(); }, { passive: false });
+svg.addEventListener('click', e => { if (!moved && e.target.id === 'base') showOverview(); });
+
+const center = () => { const r = stage.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+document.getElementById('zin').onclick = () => zoomAt(...center(), 1.5);
+document.getElementById('zout').onclick = () => zoomAt(...center(), 1 / 1.5);
+document.getElementById('zfit').onclick = () => { showOverview(); flyTo(fitBox([300, 100, 4500, 3450], 0.02)); };
+document.getElementById('zfull').onclick = () => { const d = document.documentElement; if (!document.fullscreenElement) d.requestFullscreen && d.requestFullscreen(); else document.exitFullscreen(); };
+document.querySelectorAll('[data-layer]').forEach(cb => cb.addEventListener('change', () => stage.classList.toggle('hide-' + cb.dataset.layer, !cb.checked)));
+stage.classList.add('hide-ponds');
+function hideHint() { document.getElementById('hint').style.opacity = 0; }
+window.addEventListener('resize', apply);
+
+/* =========================================================
+   4. 點選：灌區浮起、地點、埤塘
+   ========================================================= */
+function clearSel() {
+  svg.classList.remove('selected');
+  document.getElementById('lift').style.transform = 'translate(0px,0px)';
+  document.getElementById('clipPath').setAttribute('d', '');
+  document.getElementById('liftEdge').setAttribute('d', '');
+  document.getElementById('liftBranch').innerHTML = '';
+  document.querySelectorAll('.poi.on, .pond.on').forEach(x => x.classList.remove('on'));
+}
+function selectBranch(id) {
+  clearSel();
+  const d = MAP.regions[id];
+  document.getElementById('clipPath').setAttribute('d', d);
+  document.getElementById('liftEdge').setAttribute('d', d);
+  document.getElementById('liftEdge').setAttribute('stroke', COLORS[id] || '#fff');
+  if (MAP.branches[id]) el('path', { d: MAP.branches[id], class: 'branch' }, document.getElementById('liftBranch'));
+  svg.classList.add('selected');
+  requestAnimationFrame(() => requestAnimationFrame(() => { document.getElementById('lift').style.transform = 'translate(-16px,-30px)'; }));
+  if (MAP.bbox[id]) flyTo(fitBox(MAP.bbox[id], 0.2));
+  showBranch(id);
+}
+function selectPoi(p, g) { clearSel(); g.classList.add('on'); flyTo(fitBox([p.x - 350, p.y - 250, p.x + 350, p.y + 250], 0.1)); showPoi(p); }
+function selectPond(i, c) {
+  clearSel(); c.classList.add('on');
+  const [x, y, r, reg] = MAP.ponds[i];
+  const b = BRANCH[reg];
+  panel.innerHTML = `<h2>埤塘</h2>
+    <p>地圖上藍色的色塊就是埤塘，旁邊的小字是池號（例如 2-3 代表第二支線第 3 號池）。放大地圖就看得到。</p>
+    <p><b>所在灌區</b>：${b ? b.name : '（範圍外）'}<span class="tag wait">程式推估</span></p>
+    <button class="back" onclick="showOverview()">回到全圖說明</button>${noteHTML()}`;
+}
+
+/* =========================================================
+   5. 右邊面板的內容
+   ========================================================= */
+const MAIN = ['L1','L2','L3','L4','L5','L6','L7','L8-1','L8','L9','L10','L11','L12-1'];
+function noteHTML() {
+  return `<div class="note">底圖：〈桃園農田水利會灌溉區域圖〉，比例尺五萬分之一（年代與出處待補）。<br>
+    支線灌區是程式依圖上的紅色圳路推估的範圍，不是官方的灌區界線；埤塘數「圖上約」是程式辨識藍色色塊的數量，僅供參考。<br>
+    原有／現有埤塘數：農田水利署〈桃園管理處灌區埤塘發展史〉（資料年份待核）。</div>`;
+}
+function showOverview() {
+  clearSel();
+  const total = MAIN.reduce((s, k) => s + BRANCH[k].orig, 0) + 16;        // +16 = 第十二支線
+  const now = total - MAIN.reduce((s, k) => s + BRANCH[k].removed, 0);
+  const seen = Object.values(MAP.pondCount).reduce((a, b) => a + b, 0);
+  panel.innerHTML = `<h1>桃園大圳灌溉地圖</h1>
+    <p>水從右下角的石門取水口進來，沿著導水路往北，在八德、桃園之間轉向西，再分成十多條支線，把水送進一口口埤塘和田裡。</p>
+    <div class="stats">
+      <div class="stat"><b>${total}</b><span>完工時線內<br>貯水池</span></div>
+      <div class="stat"><b>${now}</b><span>現有<br>（廢除 ${total - now}）</span></div>
+      <div class="stat"><b>${seen}</b><span>這張圖上<br>約可數到</span></div>
+    </div>
+    <h3>點一條支線，看它的灌區</h3>
+    <div class="chips">${MAIN.map(k => `<button class="chip" style="border-left:6px solid ${COLORS[k]}" onclick="selectBranch('${k}')">${BRANCH[k].name}</button>`).join('')}
+      <button class="chip" onclick="selectBranch('GF')">光復圳</button><button class="chip" onclick="selectBranch('DX')">大溪一帶</button></div>
+    <h3>地圖上的地點</h3>
+    <div class="chips">${POI.map(p => `<button class="chip" onclick="selectPoi(POI[${p.id - 1}], POI[${p.id - 1}].g)">${p.id}. ${p.name}</button>`).join('')}</div>
+    <h3>小技巧</h3>
+    <p>勾選上方「埤塘」，地圖上每一口辨識到的埤塘都會被圈起來，點一下可以看它屬於哪一條支線。</p>
+    ${noteHTML()}`;
+}
+function showBranch(id) {
+  const b = BRANCH[id];
+  if (b.other) {
+    panel.innerHTML = `<h2>${b.name}</h2><p>${b.text}</p>
+      <p><b>圖上約可數到</b>：${MAP.pondCount[id] || 0} 口埤塘<span class="tag wait">程式辨識</span></p>
+      <button class="back" onclick="showOverview()">回到全圖</button>${noteHTML()}`;
+    return;
+  }
+  const now = b.orig - b.removed, pct = Math.round(now / b.orig * 100);
+  panel.innerHTML = `<h2 class="branch-title" style="--bc:${COLORS[id]}">${b.name}<span class="tag">${id}</span></h2>
+    ${b.text ? `<p>${b.text}</p>` : ''}
+    <div class="stats">
+      <div class="stat"><b>${b.orig}</b><span>原有埤塘</span></div>
+      <div class="stat"><b>${now}</b><span>現有</span></div>
+      <div class="stat"><b>${b.removed}</b><span>已廢除</span></div>
+    </div>
+    <div class="bar"><i style="width:${pct}%;background:var(--canal-light)"></i><i style="width:${100 - pct}%;background:var(--laterite-light)"></i></div>
+    <p class="muted">藍色＝還在的埤塘，紅色＝已廢除</p>
+    ${b.uses.length ? `<h3>廢除後變成什麼</h3><ul class="uses">${b.uses.map(u => `<li>${u}</li>`).join('')}</ul>` : '<p>這條支線的埤塘目前都還保留著。</p>'}
+    <p><b>圖上約可數到</b>：${MAP.pondCount[id] || 0} 口<span class="tag wait">程式辨識</span></p>
+    <button class="back" onclick="showOverview()">回到全圖</button>${noteHTML()}`;
+}
+function showPoi(p) {
+  panel.innerHTML = `<h2>${p.id}. ${p.name}${p.status === 'wait' ? '<span class="tag wait">待核</span>' : ''}</h2>
+    <p>${p.text}</p><button class="back" onclick="showOverview()">回到全圖</button>${noteHTML()}`;
+}
+
+/* =========================================================
+   6. 拖曳分隔線，調整文字欄寬度／高度
+   - 也可以在網址後面加 ?panel=300（寬度）&text=16（字級），
+     例如首頁的 <iframe src="map.html?panel=300">
+   ========================================================= */
+const root = document.documentElement;
+const qs = new URLSearchParams(location.search);
+if (qs.get('panel')) root.style.setProperty('--panel-width', parseInt(qs.get('panel')) + 'px');
+if (qs.get('text')) root.style.setProperty('--text-size', parseInt(qs.get('text')) + 'px');
+try { const sv = JSON.parse(localStorage.getItem('yq-map-panel') || 'null'); if (sv && !qs.get('panel')) { if (sv.w) root.style.setProperty('--panel-width', sv.w + 'px'); if (sv.h) root.style.setProperty('--panel-height', sv.h + '%'); } } catch (_) {}
+const divider = document.getElementById('divider');
+const isMobile = () => matchMedia('(max-width: 760px)').matches;
+let resizing = false;
+divider.addEventListener('pointerdown', e => { resizing = true; divider.classList.add('on'); divider.setPointerCapture(e.pointerId); e.preventDefault(); });
+divider.addEventListener('pointermove', e => {
+  if (!resizing) return;
+  const app = document.querySelector('.app').getBoundingClientRect();
+  if (isMobile()) {
+    const h = Math.min(75, Math.max(20, (app.bottom - e.clientY) / app.height * 100));
+    root.style.setProperty('--panel-height', h.toFixed(1) + '%');
+  } else {
+    const w = Math.min(app.width * 0.6, Math.max(240, app.right - e.clientX));
+    root.style.setProperty('--panel-width', Math.round(w) + 'px');
+  }
+  apply();
+});
+const endResize = () => {
+  if (!resizing) return; resizing = false; divider.classList.remove('on');
+  try { localStorage.setItem('yq-map-panel', JSON.stringify({ w: parseInt(getComputedStyle(root).getPropertyValue('--panel-width')), h: parseFloat(getComputedStyle(root).getPropertyValue('--panel-height')) })); } catch (_) {}
+};
+divider.addEventListener('pointerup', endResize); divider.addEventListener('pointercancel', endResize);
+divider.addEventListener('dblclick', () => { root.style.removeProperty('--panel-width'); root.style.removeProperty('--panel-height'); try { localStorage.removeItem('yq-map-panel'); } catch (_) {} apply(); });
+
+/* 如果地圖是放在首頁裡（iframe），就把「返回首頁」藏起來 */
+if (window.self !== window.top) document.body.classList.add('embedded');
+
+/* 開始 */
+showOverview();
+/* 地圖一出現（有寬高）就對準全圖；之後大小改變時重新調整標籤 */
+let didFit = false;
+function fitWhenVisible() {
+  if (screenScale() === null) return;
+  if (!didFit && !svg.classList.contains('selected')) vb = fitBox([300, 100, 4500, 3450], 0.02);
+  didFit = true;
+  apply();
+}
+requestAnimationFrame(fitWhenVisible);
+if ('ResizeObserver' in window) new ResizeObserver(fitWhenVisible).observe(stage);
+
+/* 從卡牌的 QR Code 進來：map.html?branch=L1 直接打開那一條支線，map.html?poi=1 打開 1 號地點 */
+(function () {
+  const link = new URLSearchParams(location.search);
+  const b = link.get('branch'), p = parseInt(link.get('poi'), 10);
+  if (b && BRANCH[b] && MAP.regions[b]) { hideHint(); setTimeout(() => selectBranch(b), 400); }
+  else if (p && POI[p - 1]) { hideHint(); setTimeout(() => selectPoi(POI[p - 1], POI[p - 1].g), 400); }
+})();
+</script>
+</body>
+</html>

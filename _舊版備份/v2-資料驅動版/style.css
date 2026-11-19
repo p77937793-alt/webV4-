@@ -1,0 +1,384 @@
+/* =====================================================================
+   一水千田｜全站樣式
+   ★ 想換整站的顏色、圓角、字型：只要改第 0 節的變數
+   ===================================================================== */
+
+/* ===== 0. 全站設定（顏色、字型、圓角、陰影） ===== */
+:root {
+  --blue:      #2b7bb9;   /* 主色：水 */
+  --blue-deep: #1f5f92;
+  --red:       #b5532d;   /* 強調色：紅土、數字 */
+  --green:     #5d8f2f;   /* 田 */
+  --paper:     #f4efe4;   /* 米色底 */
+  --paper-2:   #ebe3d3;
+  --card:      #ffffff;
+  --ink:       #2d2a26;   /* 內文 */
+  --muted:     #7a7166;   /* 次要文字 */
+  --line:      rgba(45, 42, 38, .1);
+
+  --font: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --shadow-1:  0 1px 2px rgba(45,42,38,.06), 0 4px 14px rgba(45,42,38,.06);
+  --shadow-2:  0 2px 4px rgba(45,42,38,.08), 0 14px 32px rgba(45,42,38,.14);
+  --ease:      cubic-bezier(.22, .8, .3, 1);   /* 先快後慢，動作比較自然 */
+  --nav-h:     60px;
+}
+
+/* ===== 1. 基本 ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; }
+h1, h2, h3 { line-height: 1.3; letter-spacing: .02em; }
+h2 { font-size: clamp(22px, 2.6vw, 28px); margin: 1.6em 0 .6em; }
+a { color: var(--blue); }
+::selection { background: rgba(43,123,185,.22); }
+.noscript { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+/* 換頁時淡入淡出（支援的瀏覽器才有，不支援的照常換頁） */
+@view-transition { navigation: auto; }
+main { animation: page-in .5s var(--ease) both; }
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== 2. 上方選單 ===== */
+.nav {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; justify-content: space-between; align-items: center;
+  min-height: var(--nav-h);
+  padding: 10px clamp(16px, 3vw, 32px);
+  background: rgba(255,255,255,.86);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: box-shadow .3s, border-color .3s;
+}
+.nav.scrolled { border-color: var(--line); box-shadow: 0 6px 20px rgba(45,42,38,.06); }
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 22px; font-weight: bold; color: var(--blue); text-decoration: none; letter-spacing: .08em;
+}
+.logo img { width: 28px; transition: transform .5s var(--ease); }
+.logo:hover img { transform: translateY(-2px) rotate(-8deg); }
+.nav nav { display: flex; gap: 4px; }
+.nav nav a {
+  position: relative;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--ink); text-decoration: none; font-size: 15px;
+  transition: color .2s, background .2s;
+}
+/* 滑過時底線從中間長出來 */
+.nav nav a::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 2px; height: 2px;
+  background: var(--blue); border-radius: 2px;
+  transform: scaleX(0); transition: transform .3s var(--ease);
+}
+.nav nav a:hover { color: var(--blue); background: rgba(43,123,185,.07); }
+.nav nav a:hover::after, .nav nav a[aria-current="page"]::after { transform: scaleX(1); }
+.nav nav a[aria-current="page"] { color: var(--blue); font-weight: bold; }
+
+/* ===== 3. 大標題區 ===== */
+.hero {
+  position: relative;
+  min-height: 70vh;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center;
+  padding: 80px 20px;
+  color: white;
+  overflow: hidden;
+  background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)),     /* 半透明黑色，讓白字看得清楚 */
+              var(--hero-bg, url("images/P3110446.jpg")) center / cover no-repeat;   /* 照片在 data/home.js 設定 */
+}
+/* 底部漸層接到米色，和下面的內容銜接得比較柔和 */
+.hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 90px;
+               background: linear-gradient(transparent, rgba(244,239,228,.35)); pointer-events: none; }
+.hero h1 { font-size: clamp(42px, 7vw, 64px); margin: 0; letter-spacing: .15em; text-shadow: 0 4px 24px rgba(0,0,0,.35); }
+.hero p  { font-size: clamp(16px, 2vw, 19px); margin: 10px 0 0; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.hero-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
+.hero h1, .hero p, .hero-buttons { animation: rise 1s var(--ease) both; }
+.hero p { animation-delay: .2s; }
+.hero-buttons { animation-delay: .4s; }
+@keyframes rise { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+
+/* ===== 4. 按鈕 ===== */
+.btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 30px;
+  background: white; color: var(--blue);
+  border-radius: 999px;
+  text-decoration: none; font-weight: bold; letter-spacing: .04em;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  transition: transform .2s var(--ease), box-shadow .2s, background .2s;
+}
+.hero-buttons .btn { margin-top: 0; }
+.btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.2); }
+.btn:active { transform: translateY(0) scale(.97); box-shadow: 0 2px 6px rgba(0,0,0,.18); transition-duration: .08s; }  /* 按下去的回饋 */
+.btn-blue { background: var(--blue); color: white; }
+.btn-blue:hover { background: var(--blue-deep); }
+
+/* 往下的箭頭 */
+.arrow {
+  position: absolute; bottom: 20px; z-index: 1;
+  width: 44px; height: 44px; display: grid; place-items: center;
+  font-size: 30px; line-height: 1; color: white; text-decoration: none;
+  border-radius: 50%;
+  animation: bounce 1.8s ease-in-out infinite;
+  transition: background .2s;
+}
+.arrow:hover { background: rgba(255,255,255,.18); }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+/* ===== 5. 重點數字 ===== */
+.facts { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; padding: 36px 20px; }
+.fact {
+  min-width: 170px;
+  background: var(--card); border-radius: var(--radius);
+  padding: 22px 30px; text-align: center;
+  box-shadow: var(--shadow-1);
+  transition: transform .3s var(--ease), box-shadow .3s;
+}
+.fact:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+.fact b { display: block; font-size: 38px; line-height: 1.2; color: var(--red); font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: 15px; }
+
+/* ===== 6. 文字內容 ===== */
+.content { max-width: 800px; margin: 0 auto; padding: 20px; }
+.content p, .content li { font-size: 16.5px; }
+.content ul { padding-left: 1.2em; }
+.content ul li { margin: 4px 0; }
+.content ul li::marker { color: var(--blue); }
+
+/* 時間軸 */
+.timeline { list-style: none; padding: 0; margin: 0 0 0 10px; border-left: 3px solid rgba(43,123,185,.35); }
+.timeline li { position: relative; padding: 0 0 20px 26px; }
+.timeline li::before {
+  content: ""; position: absolute; left: -9px; top: 7px; width: 15px; height: 15px;
+  border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 4px var(--paper);
+  transition: transform .5s var(--ease) .15s;
+}
+.timeline li.reveal::before { transform: scale(0); }        /* 淡入時，圓點跟著「啵」一下長出來 */
+.timeline li.reveal.show::before { transform: scale(1); }
+.timeline b { display: block; font-size: 22px; color: var(--red); }
+
+.story-link { text-align: center; padding-bottom: 40px; }
+
+/* ===== 7. 翻面卡牌 ===== */
+.cards { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; margin-top: 18px; }
+.card {
+  width: 200px; height: 280px;
+  perspective: 900px;                 /* 讓翻面有立體感 */
+  cursor: pointer;
+  border-radius: var(--radius);
+  -webkit-tap-highlight-color: transparent;
+}
+.card-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .7s var(--ease);
+}
+.card.flipped .card-inner { transform: rotateY(180deg); }
+.card .front, .card .back {
+  position: absolute; inset: 0;
+  padding: 18px 16px;
+  border-radius: var(--radius);
+  border: 3px solid #2b6cb0;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  box-shadow: var(--shadow-1);
+  transition: box-shadow .3s, transform .3s var(--ease);
+  overflow: hidden;
+}
+.card .front { background: var(--card); display: flex; flex-direction: column; }
+.card .front small { color: var(--muted); font-size: 13px; letter-spacing: .06em; }
+.card .front h3 { font-size: 24px; margin: 6px 0 8px; color: var(--blue-deep); }
+.card .front p  { margin: 0; font-size: 15px; }
+.card .back { background: #f1e8d6; transform: rotateY(180deg); font-size: 15px; line-height: 1.7; }
+.card .back p { margin: 0; font-size: 15px; }
+.flip-hint { margin-top: auto; font-size: 12px; color: var(--muted); opacity: .7; transition: opacity .2s, color .2s; }
+.card:hover .front, .card:hover .back { box-shadow: var(--shadow-2); }
+.card:hover .flip-hint { opacity: 1; color: var(--blue); }
+.card:not(.flipped):hover .card-inner { transform: translateY(-4px) rotateY(-6deg); }   /* 滑過時微微掀起 */
+.card:active .card-inner { transition-duration: .5s; }
+.card .more { display: inline-block; margin-top: 10px; color: var(--blue); font-weight: bold; text-decoration: none; }
+.card .more:hover { text-decoration: underline; }
+.cards-cta { text-align: center; margin-top: 30px; }
+.qr-note { font-size: 15px; color: var(--muted); margin-top: -6px; }
+
+/* ===== 8. 頁尾 ===== */
+footer { text-align: center; padding: 36px 20px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 30px; }
+
+/* ===== 9. 滑到才淡入（js/render.js 會自動加上 reveal） ===== */
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.reveal.show { opacity: 1; transform: none; }
+
+/* ===== 10. 鍵盤操作的外框 ===== */
+a:focus-visible, button:focus-visible, .card:focus-visible { outline: 3px solid #ffb703; outline-offset: 3px; border-radius: 8px; }
+
+/* ===== 11. 互動地圖 ===== */
+/* ★ 可以自己調整的數字 */
+.map-frame {
+  --map-width: 100%;      /* 地圖寬度：100% = 和文字一樣寬；也可以寫 1100px 或 95vw，會比文字欄更寬 */
+  --map-height: 620px;    /* 地圖高度（電腦） */
+  --gap-above: 16px;      /* 地圖和上面標題的距離 */
+  --gap-below: 8px;       /* 地圖和下面文字的距離 */
+  width: var(--map-width);
+  max-width: 96vw;
+  margin: var(--gap-above) 0 var(--gap-below);
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);   /* 讓變寬的地圖保持置中 */
+}
+.map-frame.reveal { transform: translateX(-50%) translateY(32px); }
+.map-frame.reveal.show { transform: translateX(-50%); }
+.map-frame iframe {
+  width: 100%; height: var(--map-height); border: 0; display: block;
+  border-radius: var(--radius-lg); background: #e9dcc6; box-shadow: var(--shadow-2);
+}
+.map-more { text-align: right; font-size: 14px; }
+.map-more a { color: var(--blue); text-decoration: none; }
+.map-more a:hover { text-decoration: underline; }
+
+/* ===== 12. 3D 模型（TresJS） ===== */
+.tres-section {
+  --tres-height: 560px;          /* ★ 3D 模型的高度（電腦） */
+  max-width: 1100px;
+  margin: 10px auto 0;
+  padding: 20px;
+  text-align: center;
+}
+.tres-section[hidden] { display: none; }
+.tres-section h2 { margin: 0 0 14px; }
+.tres-stage {
+  position: relative;
+  height: var(--tres-height);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #e6f0f4;           /* 和 3D 畫面的底色一樣 */
+  box-shadow: var(--shadow-2);
+  cursor: grab;
+  touch-action: pan-y;           /* 手機：左右拖是旋轉，上下還是可以捲動頁面 */
+  user-select: none;
+}
+.tres-stage.dragging { cursor: grabbing; }
+#tresApp { position: absolute; inset: 0; }
+.tres-loading { position: absolute; inset: 0; display: flex; gap: 10px; align-items: center; justify-content: center; color: var(--muted); font-size: 14px; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(43,123,185,.25); border-top-color: var(--blue); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tres-ui { position: absolute; z-index: 2; opacity: 0; transition: opacity .4s; }
+.tres-stage.ready .tres-ui { opacity: 1; }
+.tres-year {
+  left: 14px; top: 14px; padding: 6px 16px; border-radius: 999px;
+  background: var(--blue); color: white; font-weight: bold; font-size: 18px; letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(43,123,185,.35);
+}
+.tres-controls { right: 12px; top: 12px; display: flex; gap: 6px; }
+.tres-controls button {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid #c9d6dd; background: rgba(255,255,255,.95);
+  font-size: 17px; color: var(--ink); cursor: pointer;
+  transition: transform .15s var(--ease), border-color .2s, color .2s, box-shadow .2s;
+}
+.tres-controls button:hover { border-color: var(--blue); color: var(--blue); box-shadow: 0 4px 10px rgba(0,0,0,.1); }
+.tres-controls button:active { transform: scale(.9); }
+.tres-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(43,123,185,.15); z-index: 2; }
+.tres-progress i { display: block; height: 100%; width: 0; background: var(--blue); }
+.tres-caption { font-size: 17px; font-weight: bold; color: var(--blue); margin: 14px 0 6px; min-height: 1.7em; }
+.tres-legend { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 13px; color: #5b5348; }
+.tres-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.tres-note { font-size: 13px; color: var(--muted); margin: 0 auto; max-width: 760px; }
+
+/* ===== 13. 桌遊介紹頁 ===== */
+.game-intro { text-align: center; padding-top: 40px; }
+.game-intro h1 { font-size: clamp(32px, 5vw, 44px); margin: 0 0 6px; letter-spacing: .1em; color: var(--blue); }
+.game-lead { font-size: clamp(16px, 2vw, 19px); margin: 0 0 20px; }
+.game-figure { margin: 0; }
+.game-figure img { width: 100%; border-radius: var(--radius-lg); display: block; box-shadow: var(--shadow-2); }
+.game-figure figcaption, .game-note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* ===== 14. 大圳故事頁（一格一格往下滑） ===== */
+html.snap { scroll-snap-type: y mandatory; scroll-padding-top: 0; }
+.page-story .nav { position: fixed; left: 0; right: 0; }
+.page-story main { animation: none; }
+.panel {
+  height: 100vh;                   /* 一格＝一個螢幕高 */
+  height: 100dvh;                  /* 手機網址列會縮放，用這個比較準 */
+  scroll-snap-align: start;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center;
+  padding: var(--nav-h) 24px 0;
+  position: relative;
+  color: white;
+  --img-use: var(--img);
+  background: var(--shade, none), var(--img-use, none) var(--bg-pos, center) / cover no-repeat, var(--bg-color, #2b7bb9);
+}
+@media (max-aspect-ratio: 1/1) { .panel { --img-use: var(--img-m, var(--img)); } }   /* 直的手機畫面：有手機版圖片就換 */
+.panel.light { color: var(--ink); }
+.panel:not(.light) h2, .panel:not(.light) p, .panel:not(.light) .big { text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+.panel h2 { font-size: clamp(30px, 5vw, 42px); margin: 0 0 12px; }
+.panel p  { font-size: clamp(16px, 2vw, 19px); max-width: 580px; margin: 0; line-height: 1.85; }
+.panel .big { font-size: clamp(48px, 9vw, 80px); font-weight: bold; line-height: 1.1; letter-spacing: .02em; }
+.panel .arrow { color: inherit; opacity: .9; bottom: 24px; }
+.panel-buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.panel-buttons .btn { margin-top: 22px; }
+.panel .reveal { transform: translateY(40px); }
+.panel .reveal.show { transform: none; }
+.credit { position: absolute; left: 14px; bottom: 12px; font-size: 11px; opacity: .75; max-width: 60%; text-align: left; line-height: 1.4; }
+
+/* 右側的段落小圓點 */
+.story-dots { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 15; display: flex; flex-direction: column; gap: 10px; }
+.story-dots a { position: relative; display: block; width: 10px; height: 10px; border-radius: 50%;
+                background: rgba(255,255,255,.45); box-shadow: 0 0 0 1px rgba(0,0,0,.15); transition: transform .3s var(--ease), background .3s; }
+.story-dots a.on { background: white; transform: scale(1.45); }
+@media (hover: hover) { .story-dots a:hover { transform: scale(1.45); } }
+.story-dots span { position: absolute; right: 20px; top: 50%; transform: translate(6px, -50%); white-space: nowrap;
+                   font-size: 13px; color: white; background: rgba(0,0,0,.6); padding: 2px 10px; border-radius: 999px;
+                   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s var(--ease); }
+@media (hover: hover) { .story-dots a:hover span { opacity: 1; transform: translate(0, -50%); } }   /* 手機點完不會一直卡著提示 */
+.story-dots a:focus-visible span { opacity: 1; transform: translate(0, -50%); }
+.on-light .story-dots a { background: rgba(45,42,38,.25); }
+.on-light .story-dots a.on { background: var(--blue); }
+
+/* ===== 15. 手機與平板 ===== */
+@media (max-width: 900px) {
+  :root { --nav-h: 86px; }
+  .nav { flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 12px 4px; }
+  .logo { font-size: 19px; }
+  /* 選單改成可以左右滑的一排，右邊淡出表示還有 */
+  .nav nav { overflow-x: auto; white-space: nowrap; scrollbar-width: none; padding-bottom: 2px;
+             -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .nav nav::-webkit-scrollbar { display: none; }
+  .nav nav a { font-size: 14px; padding: 6px 8px; flex: none; }
+}
+@media (max-width: 600px) {
+  .facts { flex-direction: column; align-items: center; gap: 14px; }
+  .fact { width: min(280px, 100%); }
+  .map-frame { --map-height: 75vh; }
+  .tres-section { --tres-height: 380px; padding: 16px 12px; }
+  .tres-caption { font-size: 15px; }
+  .tres-year { font-size: 15px; padding: 4px 12px; }
+  .tres-controls button { width: 34px; height: 34px; font-size: 15px; }
+  .credit { max-width: 38%; font-size: 10px; }
+  .story-dots { right: 6px; gap: 8px; }
+  .story-dots a { width: 8px; height: 8px; }
+  .cards { gap: 16px; }
+  .card { width: calc(50% - 8px); max-width: 200px; height: 270px; }
+  .card .front h3 { font-size: 20px; }
+  .card .front, .card .back { padding: 14px 12px; }
+  .card .back, .card .back p { font-size: 14px; }
+}
+
+/* ===== 16. 系統有設定「減少動態效果」時，關掉動畫 ===== */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .card-inner { transition: none; }
+  @view-transition { navigation: none; }
+}

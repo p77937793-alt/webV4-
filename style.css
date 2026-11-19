@@ -1,0 +1,412 @@
+/* =====================================================================
+   一水千田｜全站樣式 v4
+   ---------------------------------------------------------------------
+   顏色、字體、間距、動態的數值都在 css/tokens.css（請先載入它）。
+   設計規範：DESIGN_SYSTEM.md
+
+   目錄
+     1. 基本與網格        6. 文字段落（產品特色）   11. 翻面卡牌
+     2. 導覽列            7. 時間軸                12. 大圳故事（章節）
+     3. 按鈕與連結        8. 3D 模型（HUD）         13. 頁尾、回到頂端
+     4. 首屏              9. 互動地圖（HUD）        14. 進場與捲動效果
+     5. 重點數字          10. 行動呼籲              15. 平板與手機
+   ===================================================================== */
+
+/* ===== 1. 基本與網格 ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 16px); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100vh;
+  font-family: var(--font-sans); font-size: var(--fs-18); line-height: var(--lh-body); letter-spacing: var(--ls-body);
+  color: var(--text); background: var(--surface);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img { max-width: 100%; display: block; }
+h1, h2, h3 { line-height: var(--lh-heading); margin: 0; font-weight: var(--fw-black); }
+p { margin: 0 0 .9em; }
+a { color: var(--interactive); text-underline-offset: .22em; }
+a:hover { text-decoration-thickness: 2px; }
+::selection { background: var(--brass); color: var(--iron-900); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.noscript { text-align: center; padding: 120px 20px; color: var(--text-muted); }
+.center { text-align: center; }
+.note { color: var(--text-muted); font-size: var(--fs-14); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* 12 欄網格：每個區塊裡的內容都放在 .grid 上 */
+.grid {
+  display: grid; grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr)); column-gap: var(--grid-gutter);
+  width: 100%; max-width: var(--grid-max); margin: 0 auto; padding: 0 var(--grid-margin);
+}
+.grid > * { grid-column: 1 / -1; }
+
+main { display: block; }
+body:not(.page-home):not(.page-story) main { padding-top: var(--nav-h); }
+
+/* 換頁淡入淡出（支援的瀏覽器才有） */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; }
+
+/* 區塊標題 */
+.sec-head { margin-bottom: var(--space-6); }
+.sec-head h2 { font-size: var(--fs-36); max-width: 20em; }
+
+/* ===== 2. 導覽列：實心、全寬，標出四個展區 ===== */
+.nav {
+  position: fixed; z-index: var(--z-nav); top: 0; left: 0; right: 0;
+  height: var(--nav-h); padding: 0 var(--grid-margin);
+  display: flex; align-items: stretch; justify-content: space-between; gap: var(--space-4);
+  background: var(--concrete-50); color: var(--iron-900);
+  border-bottom: 1px solid var(--concrete-300);
+  transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base);
+}
+.logo { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none;
+  font-size: var(--fs-21); font-weight: var(--fw-black); letter-spacing: .14em; white-space: nowrap; }
+.logo img { width: 22px; }
+.nav-links { display: flex; align-items: stretch; }
+.nav-links a {
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  padding: 0 var(--space-3); color: inherit; text-decoration: none; white-space: nowrap;
+  border-left: 1px solid var(--concrete-300);
+}
+.nav-links a:last-child { border-right: 1px solid var(--concrete-300); }
+.nav-zone { font-size: var(--fs-12); line-height: 1; color: var(--text-muted); letter-spacing: .2em; }
+.nav-label { font-size: var(--fs-16); line-height: 1.2; }
+/* 目前頁面：底部一條水位線 */
+.nav-links a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 4px; background: var(--canal);
+  transform: scaleX(0); transform-origin: left; transition: transform var(--dur-base) var(--ease-out); }
+.nav-links a:hover::after { transform: scaleX(.35); }
+.nav-links a[aria-current="page"]::after { transform: scaleX(1); }
+.nav-links a[aria-current="page"] .nav-label { font-weight: var(--fw-bold); }
+/* 在深色舞台上：整條翻成深色 */
+.nav.on-dark { background: var(--pond-900); color: var(--concrete-50); border-color: rgba(238, 237, 234, .16); }
+.nav.on-dark .nav-links a { border-color: rgba(238, 237, 234, .16); }
+.nav.on-dark .nav-zone { color: var(--concrete-300); }
+.nav.on-dark .nav-links a::after { background: var(--brass); }
+.nav-toggle { display: none; }
+.menu-sheet { display: none; }
+
+/* 閱讀進度：頂端一條水位線 */
+.progress { position: fixed; left: 0; top: 0; z-index: calc(var(--z-nav) + 1); width: 100%; height: 3px;
+  background: var(--canal); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; }
+
+/* ===== 3. 按鈕與連結 ===== */
+.btn {
+  --btn-bg: var(--iron-900); --btn-fg: var(--concrete-50);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 var(--space-5); border-radius: var(--radius-control);
+  font-size: var(--fs-16); font-weight: var(--fw-bold); letter-spacing: .06em; text-decoration: none;
+  background: var(--btn-bg); color: var(--btn-fg); border: 2px solid var(--btn-bg);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover { text-decoration: none; filter: brightness(1.15); }
+.btn:active { filter: brightness(.9); }
+.btn-secondary { background: transparent; color: var(--text); border-color: currentColor; }
+.btn-secondary:hover { background: var(--text); color: var(--surface); filter: none; }
+[data-zone="stage"] .btn-primary { --btn-bg: var(--brass); --btn-fg: var(--pond-900); }
+
+/* ===== 4. 首屏：大字、純淨底色（Apple） ===== */
+.hero { position: relative; padding: calc(var(--nav-h) + var(--space-8)) 0 0; text-align: center; overflow: hidden; }
+.hero-copy { width: min(1100px, calc(100% - 2 * var(--grid-margin))); margin: 0 auto; }
+.hero-eyebrow { font-size: var(--fs-16); letter-spacing: .3em; color: var(--text-muted); margin-bottom: var(--space-3); }
+.hero h1 { font-size: var(--fs-display); line-height: 1; letter-spacing: .12em; margin-right: -.12em; }
+.hero-lead { font-size: var(--fs-21); font-weight: var(--fw-light); color: var(--text-muted); max-width: 30em; margin: var(--space-4) auto 0; }
+.hero-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-6); }
+/* 首屏只有這一組進場：標題、副標、按鈕依序出現（不回彈） */
+.hero-copy > * { animation: rise var(--dur-slow) var(--ease-out) both; }
+.hero-copy > :nth-child(2) { animation-delay: 80ms; }
+.hero-copy > :nth-child(3) { animation-delay: 200ms; }
+.hero-copy > :nth-child(4) { animation-delay: 320ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.hero-media { margin: var(--space-8) auto 0; width: min(78%, 1100px); }
+.hero-img { aspect-ratio: 16 / 8; background: var(--surface-2) var(--hero-bg) center / cover no-repeat; }
+.scroll-cue { position: absolute; left: 50%; bottom: var(--space-4); z-index: 2; width: 2px; height: 56px; margin-left: -1px;
+  background: rgba(255, 255, 255, .45); overflow: hidden; }
+.scroll-cue i { position: absolute; left: 0; top: 0; width: 100%; height: 40%; background: #fff; animation: cue 1.8s var(--ease-inout) infinite; }
+.scroll-cue::after { content: ""; position: absolute; inset: -16px -20px; }   /* 放大可點範圍 */
+@keyframes cue { from { transform: translateY(-100%); } to { transform: translateY(250%); } }
+
+/* ===== 5. 重點數字：直接放在網格上 ===== */
+.facts { padding: var(--space-section) 0 0; }
+.facts-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0;
+  border-top: var(--rule-strong); }
+.fact { padding: var(--space-4) var(--space-4) 0 0; }
+.fact + .fact { border-left: var(--rule); padding-left: var(--space-4); }
+.fact dt { font-family: var(--font-serif); font-size: var(--fs-72); font-weight: var(--fw-black); line-height: 1; color: var(--accent);
+  font-variant-numeric: lining-nums tabular-nums; }
+.fact dd { margin: var(--space-2) 0 0; font-size: var(--fs-16); color: var(--text-muted); }
+[data-zone="exhibit"].facts .facts-row { border-top: 0; text-align: center; }
+[data-zone="exhibit"] .fact + .fact { border-left: 0; }
+
+/* ===== 6. 文字段落（產品特色） ===== */
+.feature { padding: var(--space-section) 0 0; }
+.feature-item { grid-column: span 6; border-top: var(--rule-strong); padding-top: var(--space-4); }
+.feature-grid.one .feature-item { grid-column: 3 / 11; }
+.feature-item h2 { font-size: var(--fs-36); margin-bottom: var(--space-4); }
+.feature-item p { font-size: var(--fs-21); font-weight: var(--fw-light); line-height: 1.75; max-width: var(--measure); }
+.feature-item p b { font-weight: var(--fw-bold); }
+.spec-list { list-style: none; margin: 0; padding: 0; }
+.spec-list li { padding: var(--space-3) 0; border-top: var(--rule); font-size: var(--fs-18); }
+.spec-list li:first-child { border-top: 0; padding-top: 0; }
+
+/* ===== 7. 時間軸：年份欄＋水位線（新北美術館） ===== */
+.chronicle { padding: var(--space-section) 0 0; }
+.chronicle .sec-head { grid-column: 4 / 11; }
+.timeline { --fill: 0; grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; list-style: none; margin: 0; padding: 0; position: relative; }
+.timeline li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding-bottom: var(--space-6); position: relative; }
+.timeline b { grid-column: 1 / 4; position: relative; padding-left: var(--space-4);
+  font-family: var(--font-serif); font-size: var(--fs-48); font-weight: var(--fw-black); line-height: 1; color: var(--accent);
+  font-variant-numeric: lining-nums; transition: color var(--dur-base) var(--ease-out); }
+.timeline p { grid-column: 4 / 11; margin: 0; padding-top: 6px; font-family: var(--font-serif); line-height: var(--lh-serif); max-width: var(--measure); }
+/* 水位線：灰色底線＋隨捲動注滿的水 */
+.timeline::before, .timeline::after { content: ""; position: absolute; left: 0; top: 0; bottom: var(--space-6); width: 3px; }
+.timeline::before { background: var(--line); }
+.timeline::after { background: var(--canal); transform-origin: top; transform: scaleY(var(--fill)); }
+.motion .timeline li:not(.lit) b { color: var(--text-muted); opacity: .45; }
+.chronicle .note { grid-column: 4 / 11; }
+[data-zone="exhibit"] .timeline b { font-family: var(--font-sans); font-size: var(--fs-36); }
+[data-zone="exhibit"] .timeline p { font-family: var(--font-sans); line-height: var(--lh-body); }
+
+/* ===== 8. 3D 模型：深色舞台＋HUD（Rockstar） ===== */
+.tres-section { --tres-height: min(78vh, 720px); padding: var(--space-section) 0; margin-top: var(--space-section); }
+.tres-section[hidden] { display: none; }
+.hud { position: relative; }
+.tres-stage { height: var(--tres-height); background: var(--pond-800); cursor: grab; touch-action: pan-y; user-select: none; overflow: hidden;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tres-stage.dragging { cursor: grabbing; }
+#tresApp { position: absolute; inset: 0; }
+.tres-loading { position: absolute; inset: 0; display: flex; gap: 10px; align-items: center; justify-content: center; color: var(--text-muted); font-size: var(--fs-14); }
+.spinner { width: 18px; height: 18px; border-radius: var(--radius-pin); border: 2px solid var(--line); border-top-color: var(--brass); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tres-ui { position: absolute; z-index: 2; opacity: 0; transition: opacity var(--dur-base); }
+.tres-stage.ready .tres-ui { opacity: 1; }
+.tres-year { left: var(--grid-margin); top: var(--space-4); padding: 6px 14px; background: var(--pond-900); color: var(--brass);
+  font-family: var(--font-serif); font-weight: var(--fw-black); font-size: var(--fs-24); border-left: 4px solid var(--brass); }
+.tres-controls { right: var(--grid-margin); top: var(--space-4); display: flex; gap: 1px; background: var(--line); }
+.hud-btn, .tres-controls button { width: 44px; height: 44px; border: 0; border-radius: 0; background: var(--pond-900); color: var(--concrete-50);
+  font-size: 16px; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.hud-btn:hover, .tres-controls button:hover { background: var(--brass); color: var(--pond-900); }
+.tres-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(238, 237, 234, .12); z-index: 2; }
+.tres-progress i { display: block; height: 100%; width: 0; background: var(--brass); }
+.tres-foot { padding-top: var(--space-4); }
+.tres-caption { grid-column: 1 / 9; font-size: var(--fs-21); font-weight: var(--fw-bold); min-height: 1.7em; margin: 0 0 var(--space-3); }
+.tres-legend { grid-column: 1 / -1; list-style: none; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-wrap: wrap; gap: 6px var(--space-4);
+  font-size: var(--fs-14); color: var(--text-muted); }
+.tres-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: 0; }
+.tres-note { grid-column: 1 / 9; font-size: var(--fs-14); color: var(--text-muted); margin: 0; }
+
+/* ===== 9. 互動地圖：全幅深色容器 ===== */
+.map-block { padding: var(--space-section) 0; }
+.tres-section + .map-block, .tres-section + .chronicle + .map-block { margin-top: 0; }
+.map-frame { --map-height: min(82vh, 760px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.map-frame iframe { display: block; width: 100%; height: var(--map-height); border: 0; background: var(--pond-800); }
+.map-foot { padding-top: var(--space-4); row-gap: var(--space-3); align-items: start; }
+.map-foot p { grid-column: 1 / 8; margin: 0; color: var(--text-muted); max-width: var(--measure); }
+.map-foot .btn { grid-column: 8 / -1; justify-self: end; }
+
+/* ===== 10. 行動呼籲 ===== */
+.cta { padding: var(--space-section) 0; }
+.cta .grid { align-items: end; row-gap: var(--space-5); }
+.cta-copy { grid-column: 1 / 9; }
+.cta h2 { font-size: var(--fs-48); line-height: var(--lh-tight); margin-bottom: var(--space-3); }
+.cta p { font-size: var(--fs-21); color: var(--text-muted); margin: 0; max-width: var(--measure); }
+.cta-action { grid-column: 9 / -1; justify-self: end; }
+/* 兩個深色區塊相鄰時不重複留白 */
+[data-zone="stage"] + [data-zone="stage"] { padding-top: 0; }
+[data-zone="stage"] + [data-zone="stage"].tres-section { margin-top: 0; }
+
+/* ===== 11. 翻面卡牌（產品展示） ===== */
+.intro { padding: var(--space-8) 0 0; text-align: center; }
+.intro-copy { width: min(1100px, calc(100% - 2 * var(--grid-margin))); margin: 0 auto; }
+.intro h1 { font-size: clamp(2.5rem, 1rem + 7vw, 7.5rem); line-height: 1.05; letter-spacing: .04em; text-wrap: balance; }
+.intro-lead { font-size: var(--fs-21); font-weight: var(--fw-light); color: var(--text-muted); max-width: 30em; margin: var(--space-4) auto 0; }
+.intro-copy > * { animation: rise var(--dur-slow) var(--ease-out) both; }
+.intro-copy > :nth-child(2) { animation-delay: 120ms; }
+.intro-figure { margin: var(--space-8) auto 0; width: min(78%, 1100px); }
+.intro-figure img { width: 100%; }
+.intro-figure figcaption { margin-top: var(--space-2); font-size: var(--fs-12); color: var(--text-muted); text-align: left; }
+
+.card-shelf { padding: var(--space-section) 0 0; }
+.card-shelf .sec-head { text-align: center; margin-bottom: var(--space-3); }
+.card-shelf .sec-head h2 { margin: 0 auto; }
+.card-shelf .note { text-align: center; max-width: var(--measure); margin: 0 auto var(--space-6); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 250px)); justify-content: center; gap: var(--space-4);
+  max-width: var(--grid-max); margin: 0 auto; padding: 0 var(--grid-margin); }
+.card { position: relative; height: 340px; border-radius: var(--radius-media); cursor: pointer; perspective: 1100px; -webkit-tap-highlight-color: transparent; }
+.card-inner { position: relative; height: 100%; transform-style: preserve-3d; transition: transform var(--dur-slow) var(--ease-inout); }
+.card.flipped .card-inner { transform: rotateY(180deg); }
+.card .front, .card .back { position: absolute; inset: 0; border-radius: var(--radius-media); padding: var(--space-4) 22px; overflow: hidden;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; }
+.card .front { background: var(--white); border: 1px solid var(--concrete-300); border-top: 6px solid var(--iron-900); }
+.card .front small { font-size: var(--fs-12); color: var(--text-muted); letter-spacing: .2em; }
+.card .front h3 { font-size: 28px; margin: var(--space-3) 0 var(--space-2); }
+.card .front p { margin: 0; color: var(--text-muted); font-size: var(--fs-16); line-height: 1.7; }
+.flip-hint { margin-top: auto; font-size: var(--fs-14); color: var(--text-muted); border-top: var(--rule); padding-top: var(--space-2); }
+.card:hover .flip-hint { color: var(--text); }
+.card .back { transform: rotateY(180deg); background: var(--concrete-100); border: 1px solid var(--concrete-300); border-top: 6px solid var(--laterite); }
+.card .back p { margin: 0; font-family: var(--font-serif); font-size: var(--fs-16); line-height: var(--lh-serif); color: var(--text); }
+.card .more { margin-top: auto; padding-top: var(--space-3); font-weight: var(--fw-bold); }
+.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+.card-shelf-foot { justify-items: center; padding-top: var(--space-6); }
+
+/* ===== 12. 大圳故事：線上特展章節（新北美術館） ===== */
+html.snap { scroll-snap-type: y mandatory; scroll-padding-top: 0; }   /* 章節本身已留出導覽列的高度 */
+.page-story { background: var(--concrete-50); }
+.chapter {
+  position: relative; height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gutter);
+  padding: calc(var(--nav-h) + var(--space-4)) var(--grid-margin) var(--space-5) calc(var(--grid-margin) + 72px);
+  border-bottom: 1px solid var(--concrete-300);
+  --img-use: var(--img);
+}
+@media (max-aspect-ratio: 1/1) { .chapter { --img-use: var(--img-m, var(--img)); } }   /* 直的畫面：有手機版圖片就換 */
+.chapter-media { grid-column: 1 / 9; margin: 0; overflow: hidden; background: var(--bg-color, var(--iron-700)); min-height: 0; }
+.chapter-img { width: 100%; height: 100%; background: var(--img-use) var(--bg-pos, center) / cover no-repeat;
+  transform: scale(1.06); transition: transform 6s var(--ease-out); }
+.chapter.active .chapter-img { transform: scale(1); }   /* 進到這一章：照片緩慢推近 */
+.chapter-label { grid-column: 9 / -1; align-self: end; display: flex; flex-direction: column; min-height: 0;
+  border-top: var(--rule-strong); padding-top: var(--space-3); }
+.chapter.no-media .chapter-label { grid-column: 3 / 11; align-self: center; }
+.chapter-no { font-size: var(--fs-14); color: var(--text-muted); letter-spacing: .12em; font-variant-numeric: tabular-nums; margin-bottom: var(--space-5); }
+.chapter .big { font-family: var(--font-serif); font-size: var(--fs-72); font-weight: var(--fw-black); line-height: 1; color: var(--laterite);
+  font-variant-numeric: lining-nums; margin-bottom: var(--space-3); overflow-wrap: anywhere; }
+.chapter h2 { font-size: var(--fs-36); margin-bottom: var(--space-3); }
+.chapter-label p { font-family: var(--font-serif); font-size: var(--fs-18); line-height: var(--lh-serif); max-width: var(--measure-narrow); margin: 0; }
+.chapter-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+.chapter-buttons .btn { --btn-bg: var(--iron-900); }
+.chapter-buttons .btn[style] { border-color: var(--btn-bg); }
+.credit { display: block; margin-top: var(--space-5); padding-top: var(--space-2); border-top: var(--rule); font-size: var(--fs-12); line-height: 1.6; color: var(--text-muted); }
+.chapter .scroll-cue { left: auto; right: var(--grid-margin); top: calc(var(--nav-h) + var(--space-4)); bottom: auto; background: var(--concrete-300); }
+.chapter .scroll-cue i { background: var(--iron-900); }
+.chapter-label > * { transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }
+.motion-story .chapter:not(.active) .chapter-label > * { opacity: 0; transform: translateY(12px); }
+
+/* 章節索引（桌機：左側直列） */
+.story-dots { position: fixed; z-index: 40; left: 0; top: var(--nav-h); bottom: 0; width: 72px; display: flex; flex-direction: column; justify-content: center;
+  border-right: 1px solid var(--concrete-300); background: var(--concrete-50); }
+.story-dots a { position: relative; display: block; padding: 7px 0; text-align: center; text-decoration: none; color: var(--text-muted);
+  font-size: var(--fs-14); font-variant-numeric: tabular-nums; }
+.story-dots a b { font-weight: var(--fw-regular); }
+.story-dots a.on { color: var(--iron-900); }
+.story-dots a.on b { font-weight: var(--fw-black); }
+.story-dots a.on::before { content: ""; position: absolute; right: -1px; top: 4px; bottom: 4px; width: 3px; background: var(--canal); }
+.story-dots span { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 8px; white-space: nowrap; font-size: var(--fs-14);
+  color: var(--concrete-50); background: var(--iron-900); padding: 4px 12px; opacity: 0; pointer-events: none; transition: opacity var(--dur-fast); }
+@media (hover: hover) { .story-dots a:hover span { opacity: 1; } .story-dots a:hover { color: var(--iron-900); } }
+.story-dots a:focus-visible span { opacity: 1; }
+.page-story #site-footer { display: none; }
+
+/* ===== 13. 頁尾、回到頂端 ===== */
+#site-footer { margin-top: var(--space-section); border-top: var(--rule-strong); background: var(--concrete-50); color: var(--iron-900); }
+.page-home #site-footer, .page-cards #site-footer { margin-top: 0; }
+.foot-inner { padding-top: var(--space-6); padding-bottom: var(--space-6); row-gap: var(--space-4); align-items: start; }
+#site-footer .logo { grid-column: 1 / 4; }
+.foot-links { grid-column: 4 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3) var(--grid-gutter); }
+.foot-links a { display: flex; flex-direction: column; color: var(--iron-900); text-decoration: none; font-size: var(--fs-16); border-top: var(--rule); padding-top: var(--space-2); }
+.foot-links a small { font-size: var(--fs-12); color: var(--text-muted); letter-spacing: .2em; }
+.foot-links a:hover { color: var(--canal); }
+.foot-text { grid-column: 1 / -1; margin: 0; padding-top: var(--space-3); border-top: var(--rule); font-size: var(--fs-14); color: var(--text-muted); }
+.to-top { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 45; width: 48px; height: 48px; padding: 0; cursor: pointer;
+  border: 0; border-radius: var(--radius-control); background: var(--iron-900); color: var(--concrete-50);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-base); }
+.to-top.show { opacity: 1; pointer-events: auto; }
+.to-top:hover { background: var(--canal); }
+.to-top svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: square; }
+
+/* ===== 14. 進場與捲動效果 ===== */
+/* 章節層級的進場：只有區塊標題與主要群組，淡入＋小位移，不模糊、不回彈 */
+.motion [data-reveal]:not(.in) { opacity: 0; transform: translateY(20px); }
+.motion [data-reveal] { transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }
+/* 產品圖片隨捲動從 78% 放大到滿版（只在支援捲動時間軸的瀏覽器） */
+@supports (animation-timeline: view()) {
+  .scrub { animation: scrub-grow linear both; animation-timeline: view(); animation-range: entry 10% cover 40%; }
+  @keyframes scrub-grow { to { width: 100%; } }
+}
+
+/* ===== 15. 平板與手機 ===== */
+@media (max-width: 1100px) {
+  .nav-links .nav-zone { display: none; }
+  .nav-links a { padding: 0 12px; }
+}
+@media (max-width: 960px) {
+  :root { --nav-h: 56px; }
+  .nav-links { display: none; }
+  .nav-toggle { display: grid; place-content: center; gap: 6px; width: 48px; margin-right: -12px; border: 0; background: transparent; cursor: pointer; color: inherit; }
+  .nav-toggle i { display: block; width: 22px; height: 2px; background: currentColor; transition: transform var(--dur-base) var(--ease-out); }
+  .menu-open .nav-toggle i:first-child { transform: translateY(4px) rotate(45deg); }
+  .menu-open .nav-toggle i:last-child  { transform: translateY(-4px) rotate(-45deg); }
+  body.menu-open .nav { background: var(--concrete-50); color: var(--iron-900); border-color: var(--concrete-300); }
+  .menu-open { overflow: hidden; }
+  /* 手機全螢幕選單：大字直排，目前頁面前面一條水位線 */
+  .menu-sheet { position: fixed; inset: var(--nav-h) 0 0; z-index: calc(var(--z-nav) - 1); display: flex; flex-direction: column;
+    padding: var(--space-4) var(--grid-margin); background: var(--concrete-50); overflow-y: auto;
+    visibility: hidden; opacity: 0; transition: opacity var(--dur-base), visibility 0s var(--dur-base); }
+  .menu-open .menu-sheet { visibility: visible; opacity: 1; transition: opacity var(--dur-base); }
+  .menu-sheet a { display: grid; grid-template-columns: 4.5em 1fr; align-items: baseline; padding: var(--space-3) 0 var(--space-3) var(--space-3); border-top: 1px solid var(--concrete-300);
+    color: var(--iron-900); text-decoration: none; }
+  .menu-sheet a:last-child { border-bottom: 1px solid var(--concrete-300); }
+  .menu-sheet .nav-zone { grid-column: 1; font-size: var(--fs-14); color: var(--iron-700); }
+  .menu-sheet .nav-label { grid-column: 2; font-size: var(--fs-24); font-weight: var(--fw-bold); }
+  .menu-sheet a[aria-current="page"] { box-shadow: inset 4px 0 0 var(--canal); }
+  .menu-sheet a[aria-current="page"] .nav-label { color: var(--canal); }
+
+  .feature-item, .feature-grid.one .feature-item { grid-column: 1 / -1; }
+  .feature-item + .feature-item { margin-top: var(--space-7); }
+  .chronicle .sec-head, .chronicle .note { grid-column: 1 / -1; }
+  .timeline b { grid-column: 1 / -1; font-size: var(--fs-36); }
+  .timeline p { grid-column: 1 / -1; padding: var(--space-2) 0 0 var(--space-4); }
+  .tres-caption, .tres-note, .cta-copy, .map-foot p { grid-column: 1 / -1; }
+  .cta-action, .map-foot .btn { grid-column: 1 / -1; justify-self: start; }
+
+  /* 故事頁：照片在上、說明在下；手機上用「靠近時吸附」，長文字不會被卡住 */
+  html.snap { scroll-snap-type: y proximity; }
+  .chapter { height: auto; min-height: 100dvh; display: flex; flex-direction: column; padding: var(--nav-h) 0 var(--space-6); }
+  .chapter-media { flex: none; height: 52vh; height: 52svh; }
+  .chapter-label { padding: var(--space-3) var(--grid-margin) 0; border-top: 0; align-self: stretch; }
+  .chapter.no-media .chapter-label { padding-top: var(--space-6); }
+  .chapter-no { margin-bottom: var(--space-3); }
+  .chapter .scroll-cue { display: none; }
+  /* 章節索引：右側細直列 */
+  .story-dots { left: auto; right: 0; top: 50%; bottom: auto; transform: translateY(-50%); width: 28px; border: 0; background: transparent; }
+  .story-dots a { padding: 5px 0; }
+  .story-dots a b { display: block; width: 6px; height: 6px; margin: 0 auto; font-size: 0; background: var(--concrete-500); }
+  .story-dots a.on b { height: 18px; background: var(--canal); }
+  .story-dots a.on::before { display: none; }
+  .story-dots span { display: none; }
+}
+@media (max-width: 600px) {
+  .hero { padding-top: calc(var(--nav-h) + var(--space-7)); }
+  .hero h1 { letter-spacing: .06em; margin-right: -.06em; }
+  .hero-buttons { flex-direction: column; align-items: stretch; width: min(320px, 100%); margin-left: auto; margin-right: auto; }
+  .hero-media, .intro-figure { width: 100%; margin-top: var(--space-7); }
+  .hero-img { aspect-ratio: 4 / 3; }
+  .intro-figure figcaption { padding: 0 var(--grid-margin); }
+  .facts-row { grid-template-columns: 1fr; }
+  .fact + .fact { border-left: 0; padding-left: 0; border-top: var(--rule); }
+  .fact { padding: var(--space-3) 0; display: flex; align-items: baseline; gap: var(--space-3); }
+  .fact dd { margin: 0; }
+  [data-zone="exhibit"].facts .facts-row { text-align: left; }
+  [data-zone="exhibit"] .fact + .fact { border-top: var(--rule); }
+  .tres-section { --tres-height: 62vh; }
+  .tres-year { font-size: var(--fs-18); left: var(--space-3); top: var(--space-3); }
+  .tres-controls { right: var(--space-3); top: var(--space-3); }
+  .map-frame { --map-height: 76vh; }
+  /* 翻面卡牌：橫向滑動，一次看到一張半 */
+  .cards { display: flex; justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-3);
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .card { flex: 0 0 72%; scroll-snap-align: center; height: 320px; }
+  #site-footer .logo, .foot-links { grid-column: 1 / -1; }
+  .foot-links { grid-template-columns: 1fr 1fr; }
+  .to-top { right: var(--space-3); bottom: var(--space-3); width: 44px; height: 44px; }
+}
+
+/* ===== 系統設定「減少動態效果」時，關掉動畫 ===== */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
+  .scrub { width: 100%; }
+  .chapter-img { transform: none; }
+  @view-transition { navigation: none; }
+}
